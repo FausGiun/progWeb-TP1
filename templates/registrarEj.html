@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Registrar Entrenamiento</title>
+</head>
+<body>
+    <h1>Registrar Salida de Running</h1>
+    <form action="/guardar-entrenamiento" method="POST">
+        <label>Fecha:</label><br>
+        <input type="date" name="fecha" required><br><br>
+        <label>Distancia (km):</label><br>
+        <input type="number" name="distancia_km" step="0.01" required><br><br>
+        <label>Tiempo total (minutos):</label><br>
+        <input type="number" name="tiempo_min" required><br><br>    
+        <label>Tipo de sesión:</label><br>
+        <select name="tipo">
+            <option value="Fondo">Fondo</option>
+            <option value="Pasadas">Pasadas</option>
+        </select><br><br>
+        <label>Zapatillas utilizadas:</label><br>
+        <select name="zapatilla_id" required>
+            {{range .}}
+                <option value="{{.ID}}">{{.MarcaModelo}} - ({{.KmsAcumulados}} km)</option>
+            {{end}}
+        </select>
+        <br><br>
+        <p>¿No están tus zapatillas? <a href="/nueva-zapatilla">Añadir zapatillas nuevas</a></p>
+        <input type="submit" value="Guardar Entrenamiento">
+    </form>
+    <br><a href="/">Volver al inicio</a>
+</body>
+</html>
