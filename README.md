@@ -10,7 +10,3 @@ Aplicación web para registrar entrenamientos de running y llevar el control del
    go run main.go
 
 4. Abrir un navegador web e ingresar a: http://localhost:8080
-
-## INFO EXTRA
-
-Ademas de cumplir con los requisitos básicos del TP1 (presentación de index.html y server en Go), el repositorio incluye la estructura para dar un pantallazo de la idea general de la aplicacion, contando con las plantillas HTML adicionales (`historial.html`, `registrarEj.html`, `nuevaZapatilla.html`) y sus respectivos handlers en Go.
