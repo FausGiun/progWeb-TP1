@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>Historial</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/historial.css">
 </head>
 <body>
+   <div class="tabla-contenedor">
     <h1>Historial de entrenamientos</h1>   
     <table border="1">
         <tr>
@@ -12,19 +15,29 @@
             <th>Fecha</th>
             <th>Distancia (km)</th>
             <th>Tiempo (min)</th>
+            <th>Ritmo</th>
+            <th>Calorías</th>
             <th>Tipo</th>
+            <th>Lugar</th>
         </tr>
         {{range .}}
         <tr>
             <td>{{.ID}}</td>
-            <td>{{.Fecha.Format "02/01/2006"}}</td>
+            <td class="dato-destacado">{{.Fecha.Format "02/01/2006"}}</td>
             <td>{{.DistanciaKm}}</td>
             <td>{{.TiempoMin}}</td>
+            <td>{{printf "%.2f" .Ritmo}} min/km</td>
+            <td>{{.Calorias}}</td>
             <td>{{.Tipo}}</td>
+            <td>{{.Lugar}}</td>
         </tr>
+        {{else}}
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 20px;">Aún no hay entrenamientos registrados.</td>
+                </tr>
         {{end}}
     </table>
-    <br><br>
-    <a href="/">Volver al inicio</a>
+    <a href="/" class="link-secundario">Volver al inicio</a>
+    </div>
 </body>
 </html>

@@ -1,0 +1,49 @@
+.form-container {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border-top: 5px solid #3498db;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+input[type="submit"] {
+    width: 100%;
+    background-color: #27ae60;
+    font-size: 18px;
+    padding: 12px;
+    margin-top: 20px;
+}
+
+input[type="submit"]:hover {
+    background-color: #2ecc71;
+}
+
+.zapatillas {
+    text-align: right;
+    margin-top: -10px; /* Lo acerca un poco al campo anterior */
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: #7f8c8d;
+}
+
+.zapatillas a {
+    color: #3498db;
+    text-decoration: none;
+    font-weight: bold;
+    margin-left: 5px;
+    transition: color 0.2s;
+}
+
+.zapatillas a:hover {
+    color: #2980b9;
+    text-decoration: underline;
+}

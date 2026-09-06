@@ -1,0 +1,26 @@
+
+.menu-principal {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 30px;
+    max-width: 400px;
+}
+
+.menu-principal a {
+    background-color: #3498db;
+    color: white;
+    padding: 15px 20px;
+    text-decoration: none;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 16px;
+    transition: transform 0.2s, background-color 0.2s;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.menu-principal a:hover {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+}

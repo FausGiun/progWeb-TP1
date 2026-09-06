@@ -3,14 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <title>Añadir zapatilla</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/formularios.css">
 </head>
 <body>
-    <h1>Añadir nuevo calzado</h1>
-    <form action="/guardar-zapatilla" method="POST">
-        <label>Marca y Modelo:</label><br>
-        <input type="text" name="marca_modelo" placeholder="Ej: Asics Novablast 3" required><br><br>    
-        <input type="submit" value="Guardar Zapatilla">
-    </form>
-    <br><a href="/">Cancelar y volver</a>
+    <div class="form-container">
+        <h1>Añadir nuevo calzado</h1>
+        <form action="/guardar-zapatilla" method="POST">           
+            <div class="input-group">
+                <label>Marca y Modelo:</label>
+                <input type="text" name="marca_modelo" placeholder="Ej: Asics Novablast 3" required>
+            </div>         
+            <input type="submit" value="Guardar Zapatilla">
+        </form>  
+        <a href="/" class="link-secundario">Cancelar y volver</a>
+    </div>
 </body>
 </html>

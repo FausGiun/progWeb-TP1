@@ -17,13 +17,16 @@ type Entrenamiento struct {
 	TiempoMin   int
 	Tipo        string
 	ZapatillaID int
+	Ritmo       float64
+	Calorias    int
+	Lugar       string
 }
 
 type Zapatilla struct {
 	ID            int
 	MarcaModelo   string
 	KmsAcumulados float64
-	Estado        string
+	Estado        bool
 }
 
 // Memoria
@@ -34,7 +37,7 @@ var (
 
 	// Inicializamos con una zapatilla hardcodeada para probar la funcionalidad
 	zapatillas = []Zapatilla{
-		{ID: 1, MarcaModelo: "Nike Pegasus 40", KmsAcumulados: 0, Estado: "Activa"},
+		{ID: 1, MarcaModelo: "Nike Pegasus 40", KmsAcumulados: 0, Estado: true},
 	}
 	proximoIDZapa = 2
 )
@@ -80,6 +83,13 @@ func guardarEntrenamientoHandler(w http.ResponseWriter, r *http.Request) {
 	distancia, _ := strconv.ParseFloat(r.FormValue("distancia_km"), 64)
 	tiempo, _ := strconv.Atoi(r.FormValue("tiempo_min"))
 	zapatillaID, _ := strconv.Atoi(r.FormValue("zapatilla_id"))
+	caloriasStr := r.FormValue("calorias")
+	var calorias int
+	if caloriasStr == "" {
+		calorias = 0
+	} else {
+		calorias, _ = strconv.Atoi(caloriasStr)
+	}
 
 	nuevoEnt := Entrenamiento{
 		ID:          proximoIDEnt,
@@ -88,6 +98,9 @@ func guardarEntrenamientoHandler(w http.ResponseWriter, r *http.Request) {
 		TiempoMin:   tiempo,
 		Tipo:        r.FormValue("tipo"),
 		ZapatillaID: zapatillaID,
+		Ritmo:       distancia / (float64(tiempo) / 60), // km/h
+		Calorias:    calorias,
+		Lugar:       r.FormValue("lugar"),
 	}
 
 	entrenamientos = append(entrenamientos, nuevoEnt)
@@ -115,7 +128,7 @@ func guardarZapatillaHandler(w http.ResponseWriter, r *http.Request) {
 			ID:            proximoIDZapa,
 			MarcaModelo:   r.FormValue("marca_modelo"),
 			KmsAcumulados: 0,
-			Estado:        "Activa",
+			Estado:        true,
 		}
 		zapatillas = append(zapatillas, nuevaZapa)
 		proximoIDZapa++
@@ -124,7 +137,7 @@ func guardarZapatillaHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	//http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	http.HandleFunc("/", rootHandler)
 	http.HandleFunc("/historial", historialHandler)
 	http.HandleFunc("/nuevo-entrenamiento", registrarEjHandler)

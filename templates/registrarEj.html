@@ -3,31 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <title>Registrar Entrenamiento</title>
+    <link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/formularios.css">
 </head>
 <body>
+     <div class="form-container">
     <h1>Registrar Salida de Running</h1>
+    
     <form action="/guardar-entrenamiento" method="POST">
-        <label>Fecha:</label><br>
-        <input type="date" name="fecha" required><br><br>
-        <label>Distancia (km):</label><br>
-        <input type="number" name="distancia_km" step="0.01" required><br><br>
-        <label>Tiempo total (minutos):</label><br>
-        <input type="number" name="tiempo_min" required><br><br>    
-        <label>Tipo de sesión:</label><br>
-        <select name="tipo">
-            <option value="Fondo">Fondo</option>
-            <option value="Pasadas">Pasadas</option>
-        </select><br><br>
-        <label>Zapatillas utilizadas:</label><br>
-        <select name="zapatilla_id" required>
-            {{range .}}
-                <option value="{{.ID}}">{{.MarcaModelo}} - ({{.KmsAcumulados}} km)</option>
-            {{end}}
-        </select>
-        <br><br>
+        <div class="input-group">
+            <label>Fecha:</label>
+            <input type="date" name="fecha" required>
+        </div>
+        <div class="input-group">
+            <label>Distancia (km):</label>
+            <input type="number" name="distancia_km" step="0.01" required>
+        </div>
+        <div class="input-group">
+            <label>Tiempo total (minutos):</label>
+        <input type="number" name="tiempo_min" required><br><br>
+        </div>    
+        <div class="input-group">
+            <label>Tipo de sesión:</label>
+            <select name="tipo">
+                <option value="Fondo">Fondo</option>
+                <option value="Pasadas">Pasadas</option>
+            </select>
+        </div>
+         <div class="input-group">
+            <label>Calorías quemadas:</label>
+            <input type="number" name="calorias" placeholder="Ej: 350">
+        </div>
+        <div class="input-group">
+            <label>Zapatillas utilizadas:</label>
+            <select name="zapatilla_id" required>
+             {{range .}}
+             {{if .Estado}}
+                <option value="{{.ID}}">{{.MarcaModelo}} ({{.KmsAcumulados}} km)</option>
+             {{end}}
+             {{end}}
+            </select>
+        </div>
+        
+        <div class="input-group">
+            <label>Lugar del entrenamiento (opcional):</label>
+            <input type="text" name="lugar" placeholder="ej: Parque independencia, cinta, etc.">
+        </div>
+        <div class="zapatillas">
         <p>¿No están tus zapatillas? <a href="/nueva-zapatilla">Añadir zapatillas nuevas</a></p>
+        </div>
         <input type="submit" value="Guardar Entrenamiento">
     </form>
-    <br><a href="/">Volver al inicio</a>
+    
+    <a href="/" class="link-secundario">Volver al inicio</a>
+    </div>
 </body>
 </html>
