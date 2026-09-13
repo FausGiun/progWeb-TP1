@@ -1,0 +1,21 @@
+services:
+  database:
+    image: postgres:18
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: tp_user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: tp_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - ./db/schema/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tp_user -d tp_db"]
+      interval: 2s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
