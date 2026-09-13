@@ -8,7 +8,7 @@ Para ejecutar y testear este proyecto, es necesario contar con:
 
 - **Go** (instalado y configurado en el PATH).
 - **Docker** y el plugin **Docker Compose** (para aislar la base de datos PostgreSQL).
-  - _Cómo instalar en Linux (Ubuntu / Pop!\_OS / Debian):_
+  - _Cómo instalar en Linux :_
     Puede instalar el motor de Docker y el plugin de Compose directamente desde la terminal ejecutando:
     ```bash
     sudo apt update
