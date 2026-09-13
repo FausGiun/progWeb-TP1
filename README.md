@@ -17,9 +17,9 @@ Para la interacción entre la aplicación en Go y la base de datos se utiliza sq
 
 Para evaluar el proyecto y correr los tests automatizados (que incluyen la creación de un entorno limpio con Docker, la ejecución de pruebas unitarias sobre las rutas HTTP y operaciones CRUD de la base de datos), simplemente ejecute:
 
-` ` `bash
+` `bash
 make test
-` ` `
+` `
 _Nota: Este comando requiere tener Docker y docker-compose instalados en el sistema._
 
 ## Cómo ejecutar la aplicación localmente
@@ -29,13 +29,13 @@ Si desea levantar la aplicación de forma manual:
 1. Asegurarse de tener Go instalado en el equipo y una base de datos PostgreSQL corriendo.
 2. Abrir una terminal en la carpeta raíz del proyecto.
 3. Ordenar y descargar las dependencias del módulo ejecutando:
-   ` ` `bash
-go mod tidy
-` ` `
+   ` `bash
+   go mod tidy
+   ` `
 4. Levantar el servidor ejecutando:
-   ` ` `bash
-go run main.go
-` ` `
+   ` `bash
+   go run main.go
+   ` `
 5. Abrir un navegador web e ingresar a: `http://localhost:8080`
 
 ## Estructura del proyecto
