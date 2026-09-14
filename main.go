@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -99,6 +100,9 @@ func (s *ServicioRunning) RegistrarNuevaZapatilla(ctx context.Context, marca str
 }
 
 func (s *ServicioRunning) RegistrarNuevaSalida(ctx context.Context, dto EntrenamientoDTO) error {
+	if dto.Fecha.After(time.Now()) {
+		return errors.New("la fecha del entrenamiento no puede ser en el futuro")
+	}
 	ritmo := dto.DistanciaKm / (float64(dto.TiempoMin) / 60)
 	lugarNull := sql.NullString{String: dto.Lugar, Valid: dto.Lugar != ""}
 
@@ -196,6 +200,10 @@ func guardarEntrenamientoHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := servicioRunning.RegistrarNuevaSalida(r.Context(), dto)
 	if err != nil {
+		if err.Error() == "la fecha del entrenamiento no puede ser en el futuro" {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		http.Error(w, "Error interno al guardar el entrenamiento", http.StatusInternalServerError)
 		return
 	}

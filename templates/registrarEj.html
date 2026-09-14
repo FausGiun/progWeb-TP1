@@ -14,6 +14,11 @@
         <div class="input-group">
             <label>Fecha:</label>
             <input type="date" name="fecha" required>
+            <script>
+                const inputFecha = document.getElementoById('fecha');
+                const hoy = new Date().toLocaleDateString('en-CA');
+                inputFecha.max = hoy;
+            </script>
         </div>
         <div class="input-group">
             <label>Distancia (km):</label>
