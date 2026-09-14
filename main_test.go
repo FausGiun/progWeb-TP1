@@ -10,19 +10,19 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func TestRutasGET(t *testing.T) {
-	// 1. Conectamos a la BD de prueba que levantó el Makefile
+func TestURLSGET(t *testing.T) {
 	conn, err := sql.Open("postgres", "postgres://tp_user:password@localhost:5432/tp_db?sslmode=disable")
 	if err != nil {
 		t.Fatalf("Error conectando a la BD de prueba: %v", err)
 	}
 	defer conn.Close()
-	dbQueries = db.New(conn)
+	repo := db.New(conn)
+	servicioRunning = &ServicioRunning{repo: repo}
 
 	rutas := []struct {
 		nombre  string
 		url     string
-		handler http.HandlerFunc //del main.go
+		handler http.HandlerFunc
 	}{
 		{"Inicio", "/", rootHandler},
 		{"Nueva Zapatilla", "/nueva-zapatilla", nuevaZapatillaHandler},
@@ -36,10 +36,7 @@ func TestRutasGET(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-
 			rr := httptest.NewRecorder()
-
-			// Ejecutamos el handler
 			ruta.handler.ServeHTTP(rr, req)
 			if status := rr.Code; status != http.StatusOK {
 				t.Errorf("La ruta %s devolvió el estado %v; se esperaba %v", ruta.url, status, http.StatusOK)

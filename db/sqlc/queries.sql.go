@@ -87,6 +87,15 @@ func (q *Queries) DeleteEntrenamiento(ctx context.Context, id int32) error {
 	return err
 }
 
+const deleteZapatilla = `-- name: DeleteZapatilla :exec
+UPDATE zapatillas SET estado = false WHERE id = $1
+`
+
+func (q *Queries) DeleteZapatilla(ctx context.Context, id int32) error {
+	_, err := q.db.ExecContext(ctx, deleteZapatilla, id)
+	return err
+}
+
 const getEntrenamiento = `-- name: GetEntrenamiento :one
 SELECT id, fecha, distancia_km, tiempo_min, tipo, zapatilla_id, ritmo, calorias, lugar FROM entrenamientos WHERE id = $1
 `
@@ -104,6 +113,22 @@ func (q *Queries) GetEntrenamiento(ctx context.Context, id int32) (Entrenamiento
 		&i.Ritmo,
 		&i.Calorias,
 		&i.Lugar,
+	)
+	return i, err
+}
+
+const getZapatilla = `-- name: GetZapatilla :one
+SELECT id, marca_modelo, kms_acumulados, estado FROM zapatillas WHERE id = $1
+`
+
+func (q *Queries) GetZapatilla(ctx context.Context, id int32) (Zapatilla, error) {
+	row := q.db.QueryRowContext(ctx, getZapatilla, id)
+	var i Zapatilla
+	err := row.Scan(
+		&i.ID,
+		&i.MarcaModelo,
+		&i.KmsAcumulados,
+		&i.Estado,
 	)
 	return i, err
 }

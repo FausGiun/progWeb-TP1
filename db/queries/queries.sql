@@ -24,3 +24,9 @@ SELECT * FROM entrenamientos ORDER BY fecha DESC;
 
 -- name: DeleteEntrenamiento :exec
 DELETE FROM entrenamientos WHERE id = $1;
+
+-- name: GetZapatilla :one
+SELECT * FROM zapatillas WHERE id = $1;
+
+-- name: DeleteZapatilla :exec
+UPDATE zapatillas SET estado = false WHERE id = $1;

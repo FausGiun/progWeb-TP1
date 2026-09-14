@@ -69,6 +69,20 @@ func TestZapatillaCRUD(t *testing.T) {
 		t.Fatalf("UpdateZapatillaKms() error = %v", err)
 	}
 
+	err = queries.DeleteZapatilla(ctx, created.ID)
+	if err != nil {
+		t.Fatalf("DeleteZapatilla() falló con el error = %v", err)
+	}
+
+	zapatillaBorrada, err := queries.GetZapatilla(ctx, created.ID)
+	if err != nil {
+		t.Fatalf("GetZapatilla() error al buscar zapatilla borrada = %v", err)
+	}
+
+	if zapatillaBorrada.Estado != false {
+		t.Fatal("Se esperaba que el estado de la zapatilla fuera false después del borrado lógico")
+	}
+
 	updated, _ := queries.ListZapatillas(ctx)
 	if updated[0].KmsAcumulados != 12.5 {
 		t.Fatalf("kms_acumulados = %v, se esperaba 12.5", updated[0].KmsAcumulados)
@@ -109,5 +123,11 @@ func TestEntrenamientoCRUD(t *testing.T) {
 	// Test de Eliminación
 	if err := queries.DeleteEntrenamiento(ctx, created.ID); err != nil {
 		t.Fatalf("DeleteEntrenamiento() error = %v", err)
+	}
+
+	//Para verificar que elimino
+	_, err = queries.GetEntrenamiento(ctx, created.ID)
+	if err == nil {
+		t.Fatal("GetEntrenamiento() esperaba un error después de eliminar, pero devolvió el registro")
 	}
 }
