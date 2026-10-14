@@ -1,0 +1,7 @@
+main
+tp1
+api
+tmp/
+
+db/sqlc/*.go
+!db/sqlc/db_test.go
