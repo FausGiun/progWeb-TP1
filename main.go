@@ -20,22 +20,17 @@ import (
 // Variable global para las consultas generadas por sqlc
 var queries *db.Queries
 
-// =========================================================================
-// DTOs PARA ENTRADA DE DATOS JSON (ENTRENAMIENTOS)
-// =========================================================================
+// Obj. de transferencia de datos para datos de entrada JSON (entrenamientos)
 
 type EntrenamientoRequest struct {
-	Fecha       string  `json:"fecha"` // Formato esperado: "YYYY-MM-DD" o RFC3339
-	DistanciaKm float64 `json:"distancia_km"`
-	TiempoMin   int     `json:"tiempo_min"`
-	Tipo        string  `json:"tipo"`
-	ZapatillaID int     `json:"zapatilla_id"`
-	Lugar       string  `json:"lugar"`
+	Fecha       string `json:"fecha"` // Formato esperado: "YYYY-MM-DD"
+	TiempoMin   int    `json:"tiempo_min"`
+	Tipo        string `json:"tipo"`
+	ZapatillaID int    `json:"zapatilla_id"`
+	Lugar       string `json:"lugar"`
 }
 
-// =========================================================================
-// EJERCICIO 4: MIDDLEWARE DE LOGGING (Filmina 38 y 39)
-// =========================================================================
+// EMiddleware de logging
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -44,9 +39,7 @@ func loggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// =========================================================================
-// FUNCIÓN PRINCIPAL Y CONFIGURACIÓN DEL SERVIDOR
-// =========================================================================
+// Func Princ. y config del server
 
 func setupRouter() http.Handler {
 	mux := http.NewServeMux()
@@ -86,10 +79,6 @@ func main() {
 	log.Println("Server starting on :8080...")
 	log.Fatal(http.ListenAndServe(":8080", handler))
 }
-
-// =========================================================================
-// HANDLERS REST: ZAPATILLAS (Filminas 26, 27 y 37)
-// =========================================================================
 
 // Manejador para /zapatillas (GET para listar, POST para crear)
 func zapatillasHandler(w http.ResponseWriter, r *http.Request) {
@@ -242,9 +231,7 @@ func deleteZapatilla(w http.ResponseWriter, r *http.Request, id int32) {
 	w.WriteHeader(http.StatusNoContent) // 204 No Content
 }
 
-// =========================================================================
-// HANDLERS REST: ENTRENAMIENTOS
-// =========================================================================
+//Manejadores para entrenamientos
 
 func entrenamientosHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/entrenamientos" {

@@ -3,9 +3,7 @@ set -e
 
 URL="http://localhost:8080"
 
-echo "=========================================================="
-echo "1. PRUEBAS CRUD DE ZAPATILLAS"
-echo "=========================================================="
+echo "Pruebas CRUD Zapatillas"
 
 echo -e "\n-> [POST /zapatillas] Creando zapatilla (Estado esperado: 201)..."
 curl -i -s -X POST "$URL/zapatillas" \
@@ -28,9 +26,7 @@ curl -i -s -X PUT "$URL/zapatillas/1" \
   -H "Content-Type: application/json" \
   -d '{"marca_modelo": "Nike Pegasus 40 Pro", "kms_acumulados": 50.0, "estado": true}'
 
-echo -e "\n\n=========================================================="
-echo "2. PRUEBAS CRUD DE ENTRENAMIENTOS"
-echo "=========================================================="
+echo "Pruebas CRUD Entrenamientos"
 
 echo -e "\n-> [POST /entrenamientos] Creando entrenamiento con Zapatilla ID 1 (Estado esperado: 201)..."
 curl -i -s -X POST "$URL/entrenamientos" \
@@ -57,4 +53,4 @@ curl -i -s -X GET "$URL/entrenamientos/1"
 echo -e "\n\n-> [DELETE /zapatillas/1] Eliminando lógicamente zapatilla ID 1 (Estado esperado: 204)..."
 curl -i -s -X DELETE "$URL/zapatillas/1"
 
-echo -e "\n✅ Todas las peticiones a la API fueron ejecutadas correctamente."
+echo -e "\n Todas las peticiones a la API fueron ejecutadas correctamente."
