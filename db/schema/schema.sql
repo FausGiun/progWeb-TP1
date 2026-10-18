@@ -14,5 +14,5 @@ CREATE TABLE entrenamientos (
     zapatilla_id INT NOT NULL REFERENCES zapatillas(id),
     ritmo DOUBLE PRECISION NOT NULL,
     calorias INT NOT NULL DEFAULT 0,
-    lugar VARCHAR(100)
+    lugar VARCHAR(100) 
 );

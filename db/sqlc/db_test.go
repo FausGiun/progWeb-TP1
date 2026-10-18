@@ -41,7 +41,7 @@ func cleanDatabase(t *testing.T) {
 }
 
 func TestZapatillaCRUD(t *testing.T) {
-	// cleanDatabase(t) // Descomentá esta línea si usabas una función para limpiar la BD al inicio
+
 	queries := New(testDatabase)
 	ctx := context.Background()
 
@@ -55,7 +55,7 @@ func TestZapatillaCRUD(t *testing.T) {
 		t.Fatalf("CreateZapatilla() error = %v", err)
 	}
 
-	// 2. Leer y verificar longitud sin acceder a índices fijos
+	// 2. Leer y verificar longitud
 	listed, err := queries.ListZapatillas(ctx)
 	if err != nil {
 		t.Fatalf("ListZapatillas() falló con error: %v", err)
@@ -64,7 +64,7 @@ func TestZapatillaCRUD(t *testing.T) {
 		t.Fatalf("ListZapatillas() devolvió 0 elementos, se esperaba al menos 1")
 	}
 
-	// 3. Actualizar (Utiliza 'created.ID' para resolver el error de variable no usada)
+	// 3. Actualizar (usa 'created.ID' para resolver el error de variable no usada)
 	err = queries.UpdateZapatillaKms(ctx, UpdateZapatillaKmsParams{
 		ID:            created.ID,
 		KmsAcumulados: 12.5,
@@ -73,7 +73,7 @@ func TestZapatillaCRUD(t *testing.T) {
 		t.Fatalf("UpdateZapatillaKms() error = %v", err)
 	}
 
-	// 4. Borrar (Utiliza 'created.ID' nuevamente)
+	// 4. Borrar (usa 'created.ID')
 	err = queries.DeleteZapatilla(ctx, created.ID)
 	if err != nil {
 		t.Fatalf("DeleteZapatilla() error = %v", err)
@@ -99,7 +99,7 @@ func TestEntrenamientoCRUD(t *testing.T) {
 		ZapatillaID: shoe.ID,
 		Ritmo:       5.0,
 		Calorias:    600,
-		Lugar:       sql.NullString{String: "Campus UNICEN", Valid: true},
+		Lugar:       sql.NullString{String: "Parque", Valid: true},
 	})
 	if err != nil {
 		t.Fatalf("CreateEntrenamiento() error = %v", err)
