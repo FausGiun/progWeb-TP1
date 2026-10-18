@@ -4,10 +4,10 @@ set -e
 APP_BIN="./tmp/api"
 API_PID=""
 
-# Limpieza que se ejecuta siempre para salir
-cleanup() {
-    echo "Limpiando Entorno..."
 
+cleanup() {
+    echo ""
+    echo "Limpiando Entorno..."
     if [ -n "$API_PID" ] && kill -0 "$API_PID" 2>/dev/null; then
         echo "-> Deteniendo servidor Go (PID: $API_PID)..."
         kill "$API_PID" || true
@@ -22,15 +22,13 @@ cleanup() {
 
 trap cleanup EXIT
 
-echo "Trabajo Previo: Preparando infraestructura y código"
-
-echo "Borrando contenedores y volúmenes anteriores..."
+echo "--Trabajo Previo--"
+echo "borrado de contenedores y volúmenes anteriores..."
 docker compose down -v
 
-echo "Generando código de base de datos  sqlc..."
+echo "Generando código de base de datos sqlc (sqlc generate)"
 sqlc generate
 
-echo "Compilando Go..."
 mkdir -p tmp
 go build -o "$APP_BIN" .
 
@@ -57,5 +55,4 @@ for i in {1..15}; do
 done
 
 echo "Prueba de Endpoints (Ejecutando requests.bash)"
-
 bash ./requests.bash

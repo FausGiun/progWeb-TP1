@@ -15,10 +15,8 @@ El proyecto aplica separación de responsabilidades en tres capas:
 
 - **Go** (1.22+)
 - **Docker** y **Docker Compose**
-- **sqlc** (`go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest`)
+- **sqlc** (`go install [github.com/sqlc-dev/sqlc/cmd/sqlc@latest](https://github.com/sqlc-dev/sqlc/cmd/sqlc@latest)`)
 - **curl** y **make**
-
----
 
 ## Cómo Probar el Proyecto (Automatizado de punta a punta)
 

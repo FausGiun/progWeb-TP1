@@ -23,11 +23,12 @@ var queries *db.Queries
 // Obj. de transferencia de datos para datos de entrada JSON (entrenamientos)
 
 type EntrenamientoRequest struct {
-	Fecha       string `json:"fecha"` // Formato esperado: "YYYY-MM-DD"
-	TiempoMin   int    `json:"tiempo_min"`
-	Tipo        string `json:"tipo"`
-	ZapatillaID int    `json:"zapatilla_id"`
-	Lugar       string `json:"lugar"`
+	Fecha       string  `json:"fecha"` // Formato esperado: "YYYY-MM-DD" o RFC3339
+	DistanciaKm float64 `json:"distancia_km"`
+	TiempoMin   int     `json:"tiempo_min"`
+	Tipo        string  `json:"tipo"`
+	ZapatillaID int     `json:"zapatilla_id"`
+	Lugar       string  `json:"lugar"`
 }
 
 // EMiddleware de logging
@@ -44,15 +45,14 @@ func loggingMiddleware(next http.Handler) http.Handler {
 func setupRouter() http.Handler {
 	mux := http.NewServeMux()
 
-	// Endpoints API REST para Zapatillas (Estilo Filmina 25)
+	// Endpoints para zapatillas
 	mux.HandleFunc("/zapatillas", zapatillasHandler)
 	mux.HandleFunc("/zapatillas/", zapatillaByIDHandler)
 
-	// Endpoints API REST para Entrenamientos
+	// Endpoints para entrenamientos
 	mux.HandleFunc("/entrenamientos", entrenamientosHandler)
 	mux.HandleFunc("/entrenamientos/", entrenamientoByIDHandler)
 
-	// Aplicamos el loggingMiddleware a todos los endpoints
 	return loggingMiddleware(mux)
 }
 
@@ -212,7 +212,7 @@ func updateZapatilla(w http.ResponseWriter, r *http.Request, id int32) {
 
 // DELETE /zapatillas/{id}
 func deleteZapatilla(w http.ResponseWriter, r *http.Request, id int32) {
-	// Verificamos primero que exista para poder devolver 404 si no existe
+	// Verificamos primero que exista para poder devolver ek 404 si no existe
 	_, err := queries.GetZapatilla(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -228,10 +228,10 @@ func deleteZapatilla(w http.ResponseWriter, r *http.Request, id int32) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent) // 204 No Content
+	w.WriteHeader(http.StatusNoContent) // 204 no content
 }
 
-//Manejadores para entrenamientos
+//handlers para entrenamientos
 
 func entrenamientosHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/entrenamientos" {
@@ -310,13 +310,12 @@ func createEntrenamiento(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validamos reglas de negocio usando funciones puras del paquete logic
 	if err := logic.ValidateEntrenamiento(fechaParsed, req.DistanciaKm, req.TiempoMin, req.Tipo, req.ZapatillaID); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Calculamos ritmo y calorías usando nuestras funciones puras
+	// Calculamos ritmo y calorías
 	ritmo := logic.CalcularRitmo(req.DistanciaKm, req.TiempoMin)
 	calorias := logic.CalcularCalorias(req.DistanciaKm)
 
