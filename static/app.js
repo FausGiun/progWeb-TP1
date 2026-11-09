@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!zapatillas.length) {
             const vacio = document.createElement("li");
             vacio.className = "empty-state";
-            vacio.textContent = "Tu próximo recorrido empieza con un par. Agregá tus zapatillas.";
+            vacio.textContent = "No tenes zapatillas activas. Agregá un par.";
             listaZapatillas.appendChild(vacio);
         }
         document.getElementById("cantidad-zapatillas").textContent = `${zapatillas.length} ${zapatillas.length === 1 ? "par activo" : "pares activos"}`;
