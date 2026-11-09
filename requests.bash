@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-URL="${API_URL:?Ejecutá bash ./test-api.sh para usar la instancia de pruebas}"
+URL="${API_URL:?Ejecutá bash ./test-app.sh para usar la instancia de pruebas}"
 RESPUESTA="$(mktemp)"
 CABECERAS="$(mktemp)"
 trap 'rm -f "$RESPUESTA" "$CABECERAS"' EXIT

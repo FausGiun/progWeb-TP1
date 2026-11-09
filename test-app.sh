@@ -17,7 +17,7 @@ export TEST_DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0
 export DATABASE_URL="$TEST_DATABASE_URL"
 export HTTP_ADDR="127.0.0.1:${TEST_HTTP_PORT:-18080}"
 export API_URL="http://$HTTP_ADDR"
-APP_BIN="./tmp/api-test"
+APP_BIN="./tmp/app-test"
 if [[ "$(go env GOOS)" == "windows" ]]; then APP_BIN+=".exe"; fi
 API_PID=""
 
@@ -55,7 +55,7 @@ if [[ "$lista" != true ]]; then echo "PostgreSQL no inició a tiempo." >&2; exit
 
 echo "Ejecutando pruebas de Go..."
 go test -p 1 -count=1 -v ./...
-"$APP_BIN" >tmp/api-test.log 2>&1 &
+"$APP_BIN" >tmp/app-test.log 2>&1 &
 API_PID=$!
 lista=false
 for intento in {1..30}; do
@@ -63,6 +63,6 @@ for intento in {1..30}; do
     if ! kill -0 "$API_PID" 2>/dev/null; then break; fi
     sleep 1
 done
-if [[ "$lista" != true ]]; then cat tmp/api-test.log >&2; exit 1; fi
+if [[ "$lista" != true ]]; then cat tmp/app-test.log >&2; exit 1; fi
 bash ./requests.bash
 echo "Pruebas de Go y HTTP completadas."
