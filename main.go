@@ -20,8 +20,14 @@ func setupRouter(conn *sql.DB) http.Handler {
 	mux.HandleFunc("/entrenamientos/", api.entrenamientoByIDHandler)
 	// La interfaz y la API comparten origen; fetch usa rutas relativas.
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	paginas := map[string]string{
+		"/":                   "static/index.html",
+		"/mis-zapatillas":     "static/zapatillas.html",
+		"/mis-entrenamientos": "static/entrenamientos.html",
+	}
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
+		archivo, existe := paginas[r.URL.Path]
+		if !existe {
 			http.NotFound(w, r)
 			return
 		}
@@ -29,7 +35,7 @@ func setupRouter(conn *sql.DB) http.Handler {
 			methodNotAllowed(w, "GET, HEAD")
 			return
 		}
-		http.ServeFile(w, r, "static/index.html")
+		http.ServeFile(w, r, archivo)
 	})
 	return loggingMiddleware(mux)
 }
@@ -51,6 +57,6 @@ func main() {
 	if addr == "" {
 		addr = ":8080"
 	}
-	log.Printf("Running Tracker disponible en %s", addr)
+	log.Printf("Runner Log - Tracker disponible en %s", addr)
 	log.Fatal(http.ListenAndServe(addr, setupRouter(conn)))
 }

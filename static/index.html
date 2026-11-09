@@ -3,93 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Runner Log · Registro de running</title>
+    <title>Runner Log - Tracker</title>
     <link rel="stylesheet" href="/static/styles.css">
-    <script src="/static/app.js" defer></script>
 </head>
 <body>
     <header class="app-header">
-        <a class="brand" href="/" aria-label="Runner Log, inicio"><span class="brand-mark">RL</span> Runner Log</a>
+        <a class="brand" href="/" aria-label="Runner Log - Tracker, inicio"><span class="brand-mark">RL</span> Runner Log - Tracker</a>
         <nav aria-label="Navegación principal">
-            <a href="#zapatillas">Zapatillas</a>
-            <a href="#entrenamientos">Entrenamientos</a>
+            <a href="/" aria-current="page">Inicio</a>
+            <a href="/mis-zapatillas">Zapatillas</a>
+            <a href="/mis-entrenamientos">Entrenamientos</a>
         </nav>
     </header>
     <main>
         <div class="intro">
             <p class="eyebrow">TU REGISTRO DE RUNNING</p>
-            <h1>Cada kilómetro cuenta.</h1>
-            <p>Registrá tus salidas, seguí el desgaste de tus zapatillas y llevá tu historial en un solo lugar.</p>
+            <h1>Runner Log: Gestor de Carreras</h1>
+            <p>Administrá tus zapatillas y registrá tus salidas para llevar el control del historial de entrenamientos y el desgaste de tu equipo.</p>
         </div>
-        <noscript><p class="message error">Activá JavaScript para cargar los listados y usar los formularios.</p></noscript>
-        <p id="mensaje-general" class="message" role="status" aria-live="polite" hidden></p>
-
-        <section id="zapatillas" aria-labelledby="titulo-zapatillas">
-            <div class="section-heading">
-                <div><p class="eyebrow">01 / TU EQUIPO</p><h2 id="titulo-zapatillas">Zapatillas</h2></div>
-                <span id="cantidad-zapatillas" class="badge">Cargando…</span>
-            </div>
-            <div class="section-grid">
-                <form id="form-zapatilla" class="card" action="/zapatillas" method="post">
-                    <h3>Agregá un par</h3>
-                    <p class="hint">Cargá también los kilómetros que ya tenía antes de empezar el registro.</p>
-                    <label for="marca-modelo">Marca y modelo</label>
-                    <input id="marca-modelo" name="marca_modelo" type="text" maxlength="255" placeholder="Ej. Asics Novablast 3" required>
-                    <label for="kms-iniciales">Kilómetros iniciales</label>
-                    <input id="kms-iniciales" name="kms_acumulados" type="number" min="0" step="0.01" value="0" required>
-                    <button type="submit">Guardar zapatilla <span aria-hidden="true">+</span></button>
-                    <p id="mensaje-zapatilla" class="message" role="status" aria-live="polite" hidden></p>
-                </form>
-                <div class="card list-card">
-                    <h3>Tu calzado activo</h3>
-                    <p class="hint">El kilometraje se actualiza con los entrenamientos registrados.</p>
-                    <ul id="lista-zapatillas" class="shoe-list" aria-label="Zapatillas activas" aria-busy="true">
-                        <li class="empty-state">Cargando zapatillas…</li>
-                    </ul>
-                    <p class="footnote">Eliminar un par lo retira del listado activo y conserva su historial.</p>
-                </div>
-            </div>
-        </section>
-
-        <section id="entrenamientos" aria-labelledby="titulo-entrenamientos">
-            <div class="section-heading">
-                <div><p class="eyebrow">02 / TUS SALIDAS</p><h2 id="titulo-entrenamientos">Entrenamientos</h2></div>
-                <span id="cantidad-entrenamientos" class="badge">Cargando…</span>
-            </div>
-            <div class="section-grid training-grid">
-                <form id="form-entrenamiento" class="card" action="/entrenamientos" method="post">
-                    <h3>Registrá una salida</h3>
-                    <div class="field-row">
-                        <div><label for="fecha">Fecha</label><input id="fecha" name="fecha" type="date" required></div>
-                        <div><label for="tipo">Tipo de sesión</label><select id="tipo" name="tipo" required><option value="Fondo">Fondo</option><option value="Pasadas">Pasadas</option></select></div>
-                    </div>
-                    <div class="field-row">
-                        <div><label for="distancia">Distancia (km)</label><input id="distancia" name="distancia_km" type="number" min="0.01" step="0.01" placeholder="5" required></div>
-                        <div><label for="tiempo">Tiempo (min)</label><input id="tiempo" name="tiempo_min" type="number" min="1" max="2147483647" step="1" placeholder="30" required></div>
-                    </div>
-                    <label for="zapatilla">Zapatillas utilizadas</label>
-                    <select id="zapatilla" name="zapatilla_id" aria-describedby="ayuda-zapatilla" required disabled><option value="">Cargando zapatillas…</option></select>
-                    <p id="ayuda-zapatilla" class="hint">Agregá al menos un par activo para registrar una salida.</p>
-                    <label for="lugar">Lugar <span class="optional">(opcional)</span></label>
-                    <input id="lugar" name="lugar" type="text" maxlength="100" placeholder="Ej. Parque Independencia">
-                    <p class="calculation-note">El ritmo (min/km) y las calorías se calculan al guardar.</p>
-                    <button id="guardar-entrenamiento" type="submit" disabled>Guardar entrenamiento <span aria-hidden="true">+</span></button>
-                    <p id="mensaje-entrenamiento" class="message" role="status" aria-live="polite" hidden></p>
-                </form>
-                <div class="card list-card history-card">
-                    <h3>Historial de entrenamientos</h3>
-                    <p class="hint">Tus últimas salidas aparecen primero.</p>
-                    <div class="table-scroll" role="region" aria-label="Historial, desplazable horizontalmente" tabindex="0">
-                        <table>
-                            <caption class="visually-hidden">Entrenamientos registrados</caption>
-                            <thead><tr><th scope="col">Fecha / sesión</th><th scope="col">Distancia</th><th scope="col">Tiempo</th><th scope="col">Ritmo</th><th scope="col">Calorías</th><th scope="col">Zapatilla</th><th scope="col">Lugar</th><th scope="col">Acción</th></tr></thead>
-                            <tbody id="lista-entrenamientos" aria-busy="true"><tr><td colspan="8" class="empty-state">Cargando entrenamientos…</td></tr></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </section>
+        <div class="home-grid">
+            <a class="card section-link" href="/mis-zapatillas">
+                <p class="eyebrow">01 / TU EQUIPO</p>
+                <h2>Zapatillas</h2>
+                <p>Agregá tus pares, consultá los kilómetros acumulados y administrá el calzado activo.</p>
+                <span>Administrar zapatillas →</span>
+            </a>
+            <a class="card section-link" href="/mis-entrenamientos">
+                <p class="eyebrow">02 / TUS SALIDAS</p>
+                <h2>Entrenamientos</h2>
+                <p>Registrá una salida, elegí el par que usaste y consultá tu historial de running.</p>
+                <span>Ver entrenamientos →</span>
+            </a>
+        </div>
     </main>
-    <footer class="app-footer">Runner Log <span>Un registro, kilómetro a kilómetro.</span></footer>
+    <footer class="app-footer">Runner Log - Tracker <span>Un registro, kilómetro a kilómetro.</span></footer>
 </body>
 </html>

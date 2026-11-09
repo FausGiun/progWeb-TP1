@@ -26,10 +26,20 @@ button { cursor: pointer; }
 nav { display: flex; gap: 28px; }
 nav a { font-size: 14px; font-weight: 600; text-decoration: none; }
 nav a:hover { text-decoration: underline; }
+nav a[aria-current="page"] { text-decoration: underline; text-underline-offset: 6px; }
 .intro { padding: 48px 0 30px; }
 .eyebrow { font-size: 11px; font-weight: 750; letter-spacing: 1.8px; color: var(--blue); margin: 0 0 9px; }
 h1 { font-size: clamp(32px, 4vw, 46px); letter-spacing: -1.6px; line-height: 1.15; margin: 0 0 14px; }
 .intro > p:last-child { color: var(--muted); max-width: 650px; margin: 0; }
+.page-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.home-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; margin: 12px 0 56px; }
+.section-link { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; text-decoration: none; color: inherit; }
+.section-link:hover { border-color: var(--blue); }
+.section-link p { color: var(--muted); margin: 0; }
+.section-link .eyebrow { color: var(--blue); }
+.section-link span { color: var(--blue); font-size: 14px; font-weight: 650; margin-top: 8px; }
+.card h2 { font-size: 17px; margin-bottom: 8px; }
+.manage-link { display: inline-block; font-size: 12px; margin-top: 3px; }
 section { margin: 20px 0 44px; scroll-margin-top: 20px; }
 .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
 .section-heading .eyebrow { margin-bottom: 3px; }
@@ -87,6 +97,8 @@ td:first-child { white-space: nowrap; }
     nav { gap: 24px; }
     .intro { padding: 32px 0 24px; }
     .section-grid { grid-template-columns: 1fr; }
+    .home-grid { grid-template-columns: 1fr; }
+    .page-heading { align-items: flex-start; flex-direction: column; gap: 4px; margin-bottom: 14px; }
     .section-heading { align-items: flex-end; }
     .app-footer { flex-direction: column; gap: 5px; }
 }

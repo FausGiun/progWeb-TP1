@@ -1,10 +1,12 @@
-# Running Tracker - Trabajo de Cursada TP4
+# Runner Log - Tracker - Trabajo de Cursada TP4
 
 Registro de zapatillas y entrenamientos con **HTML, CSS y JavaScript**, una **API REST en Go**, **PostgreSQL** y acceso a datos generado por **sqlc**. La interfaz permite listar, crear y eliminar ambas entidades sin recargar la página.
 
 ## Organización
 
-- `static/index.html`: formularios, contenedores de listados y tabla del historial.
+- `static/index.html`: página de inicio con acceso a cada sección.
+- `static/zapatillas.html`: formulario y listado de zapatillas.
+- `static/entrenamientos.html`: formulario de salidas y tabla del historial.
 - `static/app.js`: `fetch`, altas JSON, actualización del DOM y borrado con delegación de eventos.
 - `static/styles.css`: estilos, Grid para la distribución principal y Flexbox para alineaciones.
 - `main.go`: conexión, rutas, archivos estáticos y arranque del servidor.
@@ -14,7 +16,9 @@ Registro de zapatillas y entrenamientos con **HTML, CSS y JavaScript**, una **AP
 - `logic/`: validaciones y cálculos del dominio.
 - `db/schema`, `db/queries`, `db/sqlc`: esquema, consultas y código generado.
 
-Las pantallas anteriores de `templates/` se conservan como antecedente; la interfaz de TP4 es `static/index.html`.
+Las pantallas anteriores de `templates/` se conservan como antecedente. El nombre **Runner Log - Tracker** se recuperó del README y del título HTML de las ramas `tp1` y `tp2`.
+
+Las páginas se sirven en `/`, `/mis-zapatillas` y `/mis-entrenamientos`. Las rutas `/zapatillas` y `/entrenamientos` siguen siendo los recursos JSON de la API. Cada sección carga `app.js`, que registra los eventos de los elementos presentes en esa página. Entrenamientos consulta las zapatillas activas para completar su selector; zapatillas carga solamente su listado.
 
 ## Requisitos y configuración
 
@@ -34,7 +38,7 @@ Configurar en `.env` el usuario, contraseña, base y puerto de PostgreSQL. `DATA
 make run
 ```
 
-Este comando genera sqlc, compila todos los archivos Go del paquete, inicia PostgreSQL y arranca el servidor. Abrir **http://localhost:8080/**. Ctrl+C detiene los servicios y conserva el volumen con los datos.
+Este comando genera sqlc, compila todos los archivos Go del paquete, inicia PostgreSQL y arranca el servidor. Abrir **http://localhost:8080/** y elegir **Zapatillas** o **Entrenamientos**. También se puede entrar directamente a **http://localhost:8080/mis-zapatillas** o **http://localhost:8080/mis-entrenamientos**. Ctrl+C detiene los servicios y conserva el volumen con los datos.
 
 Alternativa en Git Bash si no se dispone de make:
 
@@ -53,12 +57,12 @@ Al finalizar esa alternativa, detener Go con Ctrl+C y ejecutar `docker compose d
 
 ## Comprobar el TP4 desde el navegador
 
-1. Agregar una zapatilla con kilómetros iniciales. Debe aparecer en el listado y en el selector del entrenamiento.
-2. Registrar una salida eligiendo esa zapatilla. Deben aparecer el historial, el ritmo en **min/km**, las calorías y el kilometraje actualizado.
-3. Eliminar el entrenamiento. Debe desaparecer de la tabla y descontarse su distancia del par utilizado.
-4. Eliminar la zapatilla. Debe salir del listado activo y del selector. Si tiene entrenamientos, éstos conservan la referencia al par retirado.
+1. Entrar a **Zapatillas** desde el inicio y agregar un par con kilómetros iniciales. Debe aparecer en su listado.
+2. Navegar a **Entrenamientos**: el par debe aparecer en el selector. Registrar una salida y comprobar el historial, el ritmo en **min/km** y las calorías.
+3. Volver a **Zapatillas** para comprobar el kilometraje actualizado. Eliminar la salida desde **Entrenamientos** y comprobar que se descuenta su distancia del par utilizado.
+4. Eliminar la zapatilla desde su página. Debe salir del listado activo y del selector al abrir **Entrenamientos**. Si tiene salidas, éstas conservan la referencia al par retirado.
 5. Comprobar la lista vacía, campos obligatorios, distancia positiva y fecha no futura.
-6. En las herramientas de red del navegador, verificar los `GET`, `POST` y `DELETE`; el documento no se recarga al usar los formularios.
+6. En las herramientas de red del navegador, verificar los `GET`, `POST` y `DELETE`; el documento no se recarga al usar los formularios. Los enlaces de navegación sí abren la página de la otra sección.
 
 El ritmo y las calorías se calculan en Go. El ritmo también se recalcula al leer para mostrar correctamente registros anteriores que lo almacenaban con otra unidad.
 

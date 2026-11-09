@@ -26,6 +26,8 @@ id_creado() {
 }
 
 peticion 200 GET /
+peticion 200 GET /mis-zapatillas
+peticion 200 GET /mis-entrenamientos
 peticion 200 GET /static/app.js
 peticion 200 GET /static/styles.css
 peticion 201 POST /zapatillas -H 'Content-Type: application/json' -d '{"marca_modelo":"Nike Pegasus 40","kms_acumulados":15.5}'

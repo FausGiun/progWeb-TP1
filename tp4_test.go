@@ -17,11 +17,34 @@ import (
 
 func TestInterfazYArchivosEstaticos(t *testing.T) {
 	router := setupRouter(nil)
-	for _, ruta := range []string{"/", "/static/app.js", "/static/styles.css"} {
+	for _, ruta := range []string{"/", "/mis-zapatillas", "/mis-entrenamientos", "/static/app.js", "/static/styles.css"} {
 		respuesta := httptest.NewRecorder()
 		router.ServeHTTP(respuesta, httptest.NewRequest(http.MethodGet, ruta, nil))
 		if respuesta.Code != http.StatusOK {
 			t.Errorf("GET %s = %d; esperado 200", ruta, respuesta.Code)
+		}
+	}
+	for _, pagina := range []struct {
+		ruta              string
+		formulario        string
+		formularioAusente string
+	}{
+		{"/mis-zapatillas", `id="form-zapatilla"`, `id="form-entrenamiento"`},
+		{"/mis-entrenamientos", `id="form-entrenamiento"`, `id="form-zapatilla"`},
+	} {
+		respuesta := httptest.NewRecorder()
+		router.ServeHTTP(respuesta, httptest.NewRequest(http.MethodGet, pagina.ruta, nil))
+		html := respuesta.Body.String()
+		if !strings.Contains(html, "Runner Log - Tracker") {
+			t.Errorf("%s no conserva el nombre original de la aplicación", pagina.ruta)
+		}
+		if !strings.Contains(html, pagina.formulario) || strings.Contains(html, pagina.formularioAusente) {
+			t.Errorf("%s no separa los formularios de cada sección", pagina.ruta)
+		}
+		for _, destino := range []string{`href="/mis-zapatillas"`, `href="/mis-entrenamientos"`} {
+			if !strings.Contains(html, destino) {
+				t.Errorf("%s no permite navegar a %s", pagina.ruta, destino)
+			}
 		}
 	}
 	respuesta := httptest.NewRecorder()

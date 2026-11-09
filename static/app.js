@@ -18,11 +18,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function prepararFecha() {
+        if (!inputFecha) return;
         inputFecha.max = fechaDeHoy();
         inputFecha.value = inputFecha.max;
     }
 
     function mostrarMensaje(elemento, texto, esError = false) {
+        if (!elemento) return;
         elemento.textContent = texto;
         elemento.className = `message ${esError ? "error" : "success"}`;
         elemento.hidden = texto === "";
@@ -50,13 +52,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function mostrarZapatillas() {
+        if (!listaZapatillas) return;
         listaZapatillas.textContent = "";
-        const seleccionAnterior = selectZapatilla.value;
-        selectZapatilla.textContent = "";
-        const opcionInicial = document.createElement("option");
-        opcionInicial.value = "";
-        opcionInicial.textContent = zapatillas.length ? "Seleccioná un par" : "Primero agregá una zapatilla";
-        selectZapatilla.appendChild(opcionInicial);
 
         for (const zapatilla of zapatillas) {
             const item = document.createElement("li");
@@ -73,11 +70,6 @@ document.addEventListener("DOMContentLoaded", () => {
             item.appendChild(datos);
             item.appendChild(crearBotonEliminar(zapatilla.id, "zapatillas", zapatilla.marca_modelo));
             listaZapatillas.appendChild(item);
-
-            const opcion = document.createElement("option");
-            opcion.value = zapatilla.id;
-            opcion.textContent = zapatilla.marca_modelo;
-            selectZapatilla.appendChild(opcion);
         }
 
         if (!zapatillas.length) {
@@ -85,6 +77,25 @@ document.addEventListener("DOMContentLoaded", () => {
             vacio.className = "empty-state";
             vacio.textContent = "Tu próximo recorrido empieza con un par. Agregá tus zapatillas.";
             listaZapatillas.appendChild(vacio);
+        }
+        document.getElementById("cantidad-zapatillas").textContent = `${zapatillas.length} ${zapatillas.length === 1 ? "par activo" : "pares activos"}`;
+        listaZapatillas.setAttribute("aria-busy", "false");
+    }
+
+    // La página de entrenamientos necesita las zapatillas para su selector.
+    function actualizarSelectorZapatillas() {
+        if (!selectZapatilla) return;
+        const seleccionAnterior = selectZapatilla.value;
+        selectZapatilla.textContent = "";
+        const opcionInicial = document.createElement("option");
+        opcionInicial.value = "";
+        opcionInicial.textContent = zapatillas.length ? "Seleccioná un par" : "Primero agregá una zapatilla";
+        selectZapatilla.appendChild(opcionInicial);
+        for (const zapatilla of zapatillas) {
+            const opcion = document.createElement("option");
+            opcion.value = zapatilla.id;
+            opcion.textContent = zapatilla.marca_modelo;
+            selectZapatilla.appendChild(opcion);
         }
         if (zapatillas.some(zapatilla => String(zapatilla.id) === seleccionAnterior)) {
             selectZapatilla.value = seleccionAnterior;
@@ -94,8 +105,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("ayuda-zapatilla").textContent = zapatillas.length
             ? "Seleccioná el par que usaste en esta salida."
             : "Agregá al menos un par activo para registrar una salida.";
-        document.getElementById("cantidad-zapatillas").textContent = `${zapatillas.length} ${zapatillas.length === 1 ? "par activo" : "pares activos"}`;
-        listaZapatillas.setAttribute("aria-busy", "false");
     }
 
     function agregarCelda(fila, texto, clase = "") {
@@ -108,6 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function mostrarEntrenamientos(entrenamientos) {
+        if (!listaEntrenamientos) return;
         listaEntrenamientos.textContent = "";
         for (const entrenamiento of entrenamientos) {
             const fila = document.createElement("tr");
@@ -140,9 +150,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function actualizarListas() {
-        const [pares, salidas] = await Promise.all([pedirJSON("/zapatillas"), pedirJSON("/entrenamientos")]);
+        const [pares, salidas] = await Promise.all([
+            pedirJSON("/zapatillas"),
+            listaEntrenamientos ? pedirJSON("/entrenamientos") : Promise.resolve([])
+        ]);
         zapatillas = pares;
         mostrarZapatillas();
+        actualizarSelectorZapatillas();
         mostrarEntrenamientos(salidas);
     }
 
@@ -171,25 +185,29 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    formZapatilla.addEventListener("submit", evento => {
-        evento.preventDefault();
-        guardar(formZapatilla, "/zapatillas", {
-            marca_modelo: document.getElementById("marca-modelo").value.trim(),
-            kms_acumulados: Number(document.getElementById("kms-iniciales").value)
-        }, mensajeZapatilla, () => {});
-    });
+    if (formZapatilla) {
+        formZapatilla.addEventListener("submit", evento => {
+            evento.preventDefault();
+            guardar(formZapatilla, "/zapatillas", {
+                marca_modelo: document.getElementById("marca-modelo").value.trim(),
+                kms_acumulados: Number(document.getElementById("kms-iniciales").value)
+            }, mensajeZapatilla, () => {});
+        });
+    }
 
-    formEntrenamiento.addEventListener("submit", evento => {
-        evento.preventDefault();
-        guardar(formEntrenamiento, "/entrenamientos", {
-            fecha: inputFecha.value,
-            distancia_km: Number(document.getElementById("distancia").value),
-            tiempo_min: Number(document.getElementById("tiempo").value),
-            tipo: document.getElementById("tipo").value,
-            zapatilla_id: Number(selectZapatilla.value),
-            lugar: document.getElementById("lugar").value.trim()
-        }, mensajeEntrenamiento, prepararFecha);
-    });
+    if (formEntrenamiento) {
+        formEntrenamiento.addEventListener("submit", evento => {
+            evento.preventDefault();
+            guardar(formEntrenamiento, "/entrenamientos", {
+                fecha: inputFecha.value,
+                distancia_km: Number(document.getElementById("distancia").value),
+                tiempo_min: Number(document.getElementById("tiempo").value),
+                tipo: document.getElementById("tipo").value,
+                zapatilla_id: Number(selectZapatilla.value),
+                lugar: document.getElementById("lugar").value.trim()
+            }, mensajeEntrenamiento, prepararFecha);
+        });
+    }
 
     async function eliminarRegistro(evento) {
         // Un listener en cada contenedor atiende los botones creados después del GET.
@@ -210,14 +228,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    listaZapatillas.addEventListener("click", eliminarRegistro);
-    listaEntrenamientos.addEventListener("click", eliminarRegistro);
+    if (listaZapatillas) listaZapatillas.addEventListener("click", eliminarRegistro);
+    if (listaEntrenamientos) listaEntrenamientos.addEventListener("click", eliminarRegistro);
     prepararFecha();
     actualizarListas().catch(error => {
-        listaZapatillas.setAttribute("aria-busy", "false");
-        listaEntrenamientos.setAttribute("aria-busy", "false");
-        listaZapatillas.querySelector(".empty-state").textContent = "No se pudo cargar el calzado.";
-        listaEntrenamientos.querySelector(".empty-state").textContent = "No se pudo cargar el historial.";
+        if (listaZapatillas) {
+            listaZapatillas.setAttribute("aria-busy", "false");
+            listaZapatillas.querySelector(".empty-state").textContent = "No se pudo cargar el calzado.";
+        }
+        if (listaEntrenamientos) {
+            listaEntrenamientos.setAttribute("aria-busy", "false");
+            listaEntrenamientos.querySelector(".empty-state").textContent = "No se pudo cargar el historial.";
+        }
         mostrarMensaje(mensajeGeneral, `No se pudieron cargar los registros. ${error.message}`, true);
     });
 });
