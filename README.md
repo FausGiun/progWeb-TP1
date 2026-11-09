@@ -1,147 +1,77 @@
-# Runner Log - Tracker - Trabajo de Cursada TP5
+# Running Tracker - Vistas Dinámicas con Templ y SQLc (TP5)
 
-Entrega en la rama **`tp5`**. Aplicación Go con vistas **templ**, consultas **sqlc** y **PostgreSQL**. Registra zapatillas y entrenamientos mediante formularios HTML, con renderizado del lado del servidor y Post/Redirect/Get (PRG).
+Aplicación web desarrollada en **Go** para el registro de entrenamientos de running y control del desgaste de calzado deportivo[cite: 248, 252].
 
-## Requisitos
+En esta etapa (**TP5**), la arquitectura implementa **Server-Side Rendering (SSR)** integrando la capa de presentación directamente en el servidor Go mediante **Templ** (componentes HTML tipados y compilados) y **SQLc** para la persistencia en PostgreSQL[cite: 22, 248, 250, 252]. El manejo de formularios implementa el patrón clásico **Post/Redirect/Get (PRG)**[cite: 250].
 
-- Go **1.26.6** (versión declarada en `go.mod`).
-- Docker iniciado y Docker Compose v2 con soporte de `up --wait`.
-- Bash. En Windows se puede usar **Git Bash**.
-- Los generadores `sqlc` y `templ` disponibles en `PATH`.
-- Make es opcional. Para las pruebas HTTP también se necesita curl.
+## Arquitectura del Proyecto
 
-Instalación de los generadores, si todavía no están instalados:
+El proyecto se organiza en capas bien definidas siguiendo el modelo de 3 capas (Presentación, Lógica de Negocio y Acceso a Datos)[cite: 12, 132]:
+
+- **`views/` (Capa de Presentación - SSR con Templ):**
+  - `layout.templ`: Estructura base del documento HTML (`<!DOCTYPE html>`, `<head>`, `<body>`) estilizada con **Pico.css** y hojas de estilo propias (`/static/styles.css`)[cite: 29, 248, 250, 252].
+  - `index.templ`: Página principal (`IndexPage`) que compone el layout junto con los formularios y las tablas de datos[cite: 249, 250, 252].
+  - `entity_form.templ`: Componentes de formularios HTML clásicos (`POST /zapatillas` y `POST /entrenamientos`)[cite: 250, 252].
+  - `entity_list.templ`: Componentes que reciben slices tipados de `db.Zapatilla` y `db.Entrenamiento` y renderizan las tablas de registros con acciones de eliminación[cite: 250, 252].
+- **`main.go` y `handlers*.go` (Controladores HTTP):** Reciben las peticiones del navegador, consultan la base de datos con `sqlc`, validan las reglas de negocio, renderizan los componentes de `templ` en `GET /` y aplican redirecciones `303 See Other` tras procesar formularios `POST` (Patrón PRG)[cite: 250, 252].
+- **`logic/` (Capa de Lógica de Negocio):** Funciones puras en Go (`ValidateZapatilla`, `ValidateEntrenamiento`, `CalcularRitmo`, `CalcularCalorias`) sin dependencias externas[cite: 2, 252].
+- **`db/` (Capa de Acceso a Datos):** Esquema SQL (`db/schema/schema.sql`), consultas (`db/queries/queries.sql`) y código Go seguro generado por `sqlc`[cite: 248, 252, 255].
+
+## Requisitos Previos
+
+- **Go** (1.22+)
+- **Docker** y **Docker Compose**
+- **sqlc**: `go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest`[cite: 30]
+- **templ**: `go install github.com/a-h/templ/cmd/templ@latest`[cite: 30]
+- **make**
+
+## Ejecución y Flujo de Trabajo (Makefile)
+
+El proyecto incluye un `Makefile` que automatiza la generación de código de `sqlc` y `templ`, la compilación del servidor y la gestión del contenedor de PostgreSQL en Docker[cite: 250, 252, 254].
+
+### 1. Ejecutar el Servidor
+
+Levanta el contenedor de PostgreSQL, espera a que acepte conexiones, ejecuta `sqlc generate` y `templ generate`, compila el binario e inicia el servidor en `http://localhost:8080`[cite: 250, 252, 254]:
 
 ```bash
-go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
-go install github.com/a-h/templ/cmd/templ@v0.3.1100
+make run
 ```
 
-El directorio de ejecutables de Go (`go env GOPATH`, subcarpeta `bin`) debe estar en `PATH`.
+Una vez iniciado, abrir en el navegador:
+👉 **`http://localhost:8080`**
 
-## Ejecutar después de clonar
+*(Al presionar `Ctrl + C`, el servidor se detiene y apaga el contenedor de Docker automáticamente).*
 
-Desde la carpeta del proyecto, en Bash:
+### 2. Ejecutar Pruebas Automatizadas
 
-```bash
-bash ./run-app.sh
-```
-
-Alternativa con Make:
+Inicia una base de datos limpia en Docker, ejecuta las pruebas unitarias de lógica de negocio (`logic/`), las pruebas de integración de base de datos (`db/sqlc/`) y las pruebas de renderizado SSR y flujo PRG (`main_test.go`), eliminando los contenedores al terminar[cite: 252]:
 
 ```bash
-make run-app
-```
-
-`make run` es un alias del mismo ciclo. Abrir **http://localhost:8080/** con la configuración de ejemplo. Presionar **Ctrl+C** para detener la aplicación y completar la limpieza.
-
-Si falta `.env`, el script lo crea desde `.env.example`. Sus valores son ejemplos locales. Si se modifica el usuario, la contraseña, la base o `DB_PORT`, también debe actualizarse `DATABASE_URL`. `HTTP_ADDR` configura dónde escucha Go. `.env` está excluido de Git.
-
-### Ciclo completo de la entrega
-
-El mismo script realiza todas las tareas:
-
-1. Verifica las herramientas y carga la configuración.
-2. Elimina contenedores y volúmenes anteriores del proyecto Docker **`progweb-tp5-app`**.
-3. Ejecuta **`sqlc generate`** y **`templ generate`**.
-4. Compila todo el paquete Go en `tmp/runner-log` (`.exe` en Windows).
-5. Levanta PostgreSQL y espera el resultado de su **healthcheck**, con un límite de 60 segundos.
-6. Ejecuta la aplicación y espera su finalización.
-7. Al salir normalmente, con Ctrl+C o por un error posterior a la preparación, detiene el proceso y elimina los contenedores y volúmenes de **ese mismo proyecto Docker**.
-
-**La base de esta entrega empieza vacía en cada ejecución y sus datos se eliminan al salir**, como exige la consigna. La limpieza usa un nombre de proyecto explícito; no elimina los recursos de otros proyectos Docker. Para una limpieza manual del mismo entorno: `make clean`.
-
-Los puertos de ejemplo son 8080 para HTTP y 5432 para PostgreSQL. Deben estar disponibles o cambiarse en `.env`. Los números de puertos de pruebas son elecciones de esta implementación, no una exigencia de la cátedra.
-
-## Cómo funciona
-
-1. El navegador pide una página con **GET**.
-2. El handler consulta PostgreSQL con sqlc y renderiza el HTML con templ.
-3. El navegador envía un formulario nativo con **POST**.
-4. Go usa `r.ParseForm()`, convierte y valida los campos, y guarda los datos.
-5. Devuelve **303 See Other** con `http.Redirect`. El navegador hace otro GET y recibe el listado actualizado. Así recargar la página de resultado no vuelve a crear el registro.
-
-**No hay archivos JavaScript ni dependencia de JavaScript para usar la aplicación.** La entrega anterior con HTML y JavaScript está en la rama `tp4`. Las vistas del TP5 están en `views/`, y el único archivo estático activo es `static/styles.css`.
-
-### Rutas
-
-| Método y ruta | Operación |
-| --- | --- |
-| `GET /` | Formulario e historial de entrenamientos. |
-| `GET /mis-zapatillas` | Formulario y listado de zapatillas activas. |
-| `GET /mis-entrenamientos` | Redirección a `/`, para la dirección anterior. |
-| `POST /zapatillas` | Alta de zapatilla y redirección a su página. |
-| `POST /entrenamientos` | Alta de salida y redirección al inicio. |
-| `POST /zapatillas/eliminar` | Baja lógica del par y redirección. |
-| `POST /entrenamientos/eliminar` | Borrado de salida y redirección. |
-| `GET /static/styles.css` | Hoja de estilos. |
-
-Los formularios no envían JSON. Una entrada inválida devuelve 400; un registro inexistente, 404; un método no permitido, 405; un fallo interno, 500. Los errores de carga se muestran como texto y se puede volver al formulario con Atrás.
-
-### Reglas del registro
-
-- La zapatilla admite kilómetros previos. Crear una salida suma su distancia; borrarla la descuenta.
-- El alta o borrado de la salida y el cambio de kilometraje usan **una misma transacción**. Un fallo revierte ambas escrituras.
-- El ritmo se calcula como minutos/distancia, en **min/km**. Las calorías son una estimación fija de distancia × 65.
-- Eliminar un par cambia `estado` a falso: conserva su fila e historial, pero lo quita de los activos y no permite nuevas salidas con él.
-- Si no hay zapatillas activas, el formulario de entrenamiento queda deshabilitado. Go vuelve a validar aunque se envíe una petición manual.
-
-## Archivos principales
-
-| Archivo | Responsabilidad |
-| --- | --- |
-| `run-app.sh` / `Makefile` | Ciclo de ejecución y limpieza exigido para la entrega. |
-| `main.go` | Conexión a la base, rutas y arranque. |
-| `handlers_entrenamientos.go` | GET, lectura del formulario, alta y borrado de salidas. |
-| `handlers_zapatillas.go` | Vista, alta y baja de zapatillas. |
-| `handlers.go` / `middleware.go` | Errores, ID, transacciones y log de peticiones. |
-| `views/layout.templ` | Documento base, navegación, CSS y pie. |
-| `views/entity_form.templ` | Formularios HTML. |
-| `views/entity_list.templ` | Listados y formularios de borrado. |
-| `views/index.templ` | Composición de las dos páginas. |
-| `logic/running.go` | Validaciones, ritmo y calorías. |
-| `db/schema`, `db/queries`, `db/sqlc` | Esquema, consultas y código generado por sqlc. |
-| `test-app.sh`, `requests.bash`, `*_test.go` | Pruebas de la aplicación web. |
-
-`templ generate` crea los `views/*_templ.go`, incluidos en Git. `sqlc generate` obtiene el código de acceso a datos. Se editan las fuentes `.templ` y `.sql`, no los archivos generados. Las plantillas y estilos antiguos sin uso se quitaron de esta rama.
-
-## Comprobación manual para la defensa
-
-1. Ejecutar el comando de entrega y abrir Zapatillas. Agregar un par con 12,5 km iniciales.
-2. Ir a Entrenamientos y registrar 10 km en 50 minutos con ese par.
-3. Comprobar 5 min/km y 650 kcal. En Zapatillas deben aparecer 22,5 km.
-4. Recargar: la salida no se vuelve a crear porque la última petición es GET.
-5. Borrar la salida: el par debe volver a 12,5 km.
-6. Retirar el par: deja de aparecer en los activos.
-7. Finalizar con Ctrl+C: se eliminan los contenedores y el volumen de la entrega. Al volver a ejecutar comienza una base nueva.
-
-## Pruebas
-
-Después de disponer de `.env` (lo crea `run-app.sh` si falta):
-
-```bash
-bash ./test-app.sh
-# Alternativa:
 make test
 ```
 
-Estas pruebas comprueban **HTML, formularios y redirecciones**, no la API JSON anterior. El script genera código, compila, ejecuta los tests de Go e inicia una instancia para probar 8 peticiones HTTP con curl.
+### 3. Regenerar Código Manualmente (SQLc + Templ)
 
-Usa el proyecto Docker **`progweb-tp5-tests`**, con puertos independientes (`TEST_DB_PORT` y `TEST_HTTP_PORT`, por defecto 55432 y 18080). Al terminar elimina su proceso, contenedores y volumen temporal. Los tests limpian las tablas de esa base de pruebas.
+Si se modifican archivos `.sql` o `.templ`, se puede regenerar el código Go ejecutando[cite: 250, 254]:
 
-Se verifican datos reales en el HTML, escape del texto ingresado, separación de páginas, validaciones, PRG, ritmo/calorías, kilometraje, bajas y rollback ante un fallo. No se deben ejecutar los tests contra una base con datos que se quieran conservar.
+```bash
+make generate
+```
 
-## Material de la cátedra utilizado
+### 4. Limpiar el Entorno
 
-Los números son páginas del PDF; los archivos están en la carpeta superior de este espacio de trabajo.
+Detiene y elimina los contenedores y volúmenes de Docker, y borra los archivos autogenerados y binarios temporales[cite: 252, 254]:
 
-| Tema | Material local | Páginas |
-| --- | --- | --- |
-| Componentes, sqlc, formularios PRG y automatización | `tp5.pdf`, Trabajo de Cursada | 3 |
-| Componentes tipados y renderizado | `09-view-static.pdf` | 15-24 y 33-35 |
-| Archivos estáticos | `09-view-static.pdf` | 22 |
-| Conexión y configuración | `09-view-static.pdf` | 36-37 |
-| Docker, variables y comandos de limpieza | `03-docker.pdf` | 17-20 |
-| Transacciones conservadas del TP4 | `12-diseño.pdf` | 50-53 |
+```bash
+make clean
+```
 
-El ciclo con limpieza de contenedores y volúmenes antes y después, el nombre de rama y la ausencia de `.js` siguen además las condiciones de entrega proporcionadas en el chat.
+## Rutas Principales del Servidor SSR
+
+| Método | Ruta | Acción | Respuesta |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/` | Obtiene zapatillas y entrenamientos de la BD y renderiza `views.IndexPage` | `200 OK` (`text/html`)[cite: 250] |
+| `POST` | `/zapatillas` | Parsea el formulario, valida y guarda una nueva zapatilla | `303 See Other` (Redirect a `/`)[cite: 250] |
+| `POST` | `/zapatillas/{id}/delete` | Elimina una zapatilla desde el formulario de la tabla | `303 See Other` (Redirect a `/`) |
+| `POST` | `/entrenamientos` | Parsea el formulario, calcula ritmo/calorías, guarda el entrenamiento y suma Kms | `303 See Other` (Redirect a `/`)[cite: 250] |
+| `POST` | `/entrenamientos/{id}/delete` | Elimina un entrenamiento desde el formulario de la tabla | `303 See Other` (Redirect a `/`) |
