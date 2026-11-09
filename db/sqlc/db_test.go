@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -10,14 +11,13 @@ import (
 	_ "github.com/lib/pq"
 )
 
-const defaultTestDatabaseSource = "postgres://tp_user:password@localhost:5432/tp_db?sslmode=disable"
-
 var testDatabase *sql.DB
 
 func TestMain(m *testing.M) {
-	databaseSource := os.Getenv("DB_SOURCE")
+	databaseSource := os.Getenv("TEST_DATABASE_URL")
 	if databaseSource == "" {
-		databaseSource = defaultTestDatabaseSource
+		fmt.Fprintln(os.Stderr, "Falta TEST_DATABASE_URL. Ejecutá make test para usar la base de pruebas.")
+		os.Exit(1)
 	}
 	database, err := sql.Open("postgres", databaseSource)
 	if err != nil {
@@ -41,7 +41,7 @@ func cleanDatabase(t *testing.T) {
 }
 
 func TestZapatillaCRUD(t *testing.T) {
-
+	cleanDatabase(t)
 	queries := New(testDatabase)
 	ctx := context.Background()
 

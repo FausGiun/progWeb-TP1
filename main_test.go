@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	db "tp1/db/sqlc"
 
@@ -14,7 +15,10 @@ import (
 )
 
 func TestAPIREST_CRUDCompleto(t *testing.T) {
-	dsn := "postgres://tp_user:password@localhost:5432/tp_db?sslmode=disable"
+	dsn := os.Getenv("TEST_DATABASE_URL")
+	if dsn == "" {
+		t.Fatal("Falta TEST_DATABASE_URL. Ejecutá make test para usar la base de pruebas.")
+	}
 	conn, err := sql.Open("postgres", dsn)
 	if err != nil {
 		t.Fatalf("Error abriendo conexión de prueba: %v", err)
@@ -26,8 +30,7 @@ func TestAPIREST_CRUDCompleto(t *testing.T) {
 		t.Fatalf("Error limpiando tablas antes del test: %v", err)
 	}
 
-	queries = db.New(conn)
-	router := setupRouter()
+	router := setupRouter(conn)
 
 	var zapatillaID int32
 	var entrenamientoID int32
@@ -135,7 +138,7 @@ func TestAPIREST_CRUDCompleto(t *testing.T) {
 		if err := json.NewDecoder(rr.Body).Decode(&creado); err != nil {
 			t.Fatalf("Error decodificando entrenamiento: %v", err)
 		}
-		if creado.Ritmo != 12.0 || creado.Calorias != 650 {
+		if creado.Ritmo != 5.0 || creado.Calorias != 650 {
 			t.Errorf("Cálculos de lógica pura incorrectos: ritmo=%v, calorias=%v", creado.Ritmo, creado.Calorias)
 		}
 		entrenamientoID = creado.ID

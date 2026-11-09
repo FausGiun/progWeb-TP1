@@ -14,6 +14,14 @@ ORDER BY id ASC;
 SELECT * FROM zapatillas
 WHERE id = $1 LIMIT 1;
 
+-- name: GetZapatillaForUpdate :one
+SELECT * FROM zapatillas
+WHERE id = $1 FOR UPDATE;
+
+-- name: GetKilometrosRegistrados :one
+SELECT COALESCE(SUM(distancia_km), 0)::double precision AS kilometros
+FROM entrenamientos WHERE zapatilla_id = $1;
+
 -- name: UpdateZapatilla :one
 UPDATE zapatillas
 SET marca_modelo = $2, kms_acumulados = $3, estado = $4
@@ -22,7 +30,7 @@ RETURNING *;
 
 -- name: UpdateZapatillaKms :exec
 UPDATE zapatillas
-SET kms_acumulados = kms_acumulados + $2
+SET kms_acumulados = GREATEST(0::double precision, kms_acumulados + $2)
 WHERE id = $1;
 
 -- name: DeleteZapatilla :exec
@@ -47,6 +55,10 @@ ORDER BY fecha DESC, id DESC;
 -- name: GetEntrenamiento :one
 SELECT * FROM entrenamientos
 WHERE id = $1 LIMIT 1;
+
+-- name: GetEntrenamientoForUpdate :one
+SELECT * FROM entrenamientos
+WHERE id = $1 FOR UPDATE;
 
 -- name: UpdateEntrenamiento :one
 UPDATE entrenamientos

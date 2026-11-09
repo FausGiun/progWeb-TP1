@@ -3,5 +3,9 @@ tp1
 api
 tmp/
 
+.env
+.env.*
+!.env.example
+
 db/sqlc/*.go
 !db/sqlc/db_test.go

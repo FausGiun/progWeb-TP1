@@ -26,24 +26,24 @@ func ValidateEntrenamiento(fecha time.Time, distanciaKm float64, tiempoMin int, 
 	if distanciaKm <= 0 {
 		return errors.New("la distancia debe ser mayor a 0 km")
 	}
-	if tiempoMin <= 0 {
-		return errors.New("el tiempo debe ser mayor a 0 minutos")
+	if tiempoMin <= 0 || tiempoMin > 2147483647 {
+		return errors.New("el tiempo debe ser un entero positivo válido")
 	}
 	if strings.TrimSpace(tipo) == "" {
 		return errors.New("el tipo de entrenamiento no puede estar vacío")
 	}
-	if zapatillaID <= 0 {
+	if zapatillaID <= 0 || zapatillaID > 2147483647 {
 		return errors.New("debe especificar un ID de zapatilla válido")
 	}
 	return nil
 }
 
 func CalcularRitmo(distanciaKm float64, tiempoMin int) float64 {
-	if tiempoMin <= 0 {
+	if distanciaKm <= 0 || tiempoMin <= 0 {
 		return 0
 	}
-	horas := float64(tiempoMin) / 60.0
-	return distanciaKm / horas
+	// Ritmo expresado en minutos por kilómetro, como en el historial.
+	return float64(tiempoMin) / distanciaKm
 }
 
 func CalcularCalorias(distanciaKm float64) int32 {

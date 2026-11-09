@@ -1,18 +1,17 @@
 services:
   database:
     image: postgres:18
-    container_name: postgres-db
     environment:
-      POSTGRES_USER: tp_user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: tp_db
+      POSTGRES_USER: ${POSTGRES_USER:?Configurar POSTGRES_USER en .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Configurar POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: ${POSTGRES_DB:?Configurar POSTGRES_DB en .env}
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql
-      - ./db/schema/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - ./db/schema/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tp_user -d tp_db"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 2s
       timeout: 5s
       retries: 5

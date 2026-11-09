@@ -1,58 +1,67 @@
 #!/bin/bash
-set -e
+set -euo pipefail
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
 
-APP_BIN="./tmp/api"
+if [[ ! -f .env ]]; then
+    echo "Copiá .env.example a .env antes de ejecutar las pruebas." >&2
+    exit 1
+fi
+set -a
+. ./.env
+set +a
+
+# Proyecto y puertos independientes: no se reinicia la base de desarrollo.
+TEST_PROJECT="progweb-tp4-tests"
+export DB_PORT="${TEST_DB_PORT:-55432}"
+export TEST_DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:${DB_PORT}/${POSTGRES_DB}?sslmode=disable"
+export DATABASE_URL="$TEST_DATABASE_URL"
+export HTTP_ADDR="127.0.0.1:${TEST_HTTP_PORT:-18080}"
+export API_URL="http://$HTTP_ADDR"
+APP_BIN="./tmp/api-test"
+if [[ "$(go env GOOS)" == "windows" ]]; then APP_BIN+=".exe"; fi
 API_PID=""
 
-
 cleanup() {
-    echo ""
-    echo "Limpiando Entorno..."
-    if [ -n "$API_PID" ] && kill -0 "$API_PID" 2>/dev/null; then
-        echo "-> Deteniendo servidor Go (PID: $API_PID)..."
+    local resultado=$?
+    trap - EXIT
+    if [[ -n "$API_PID" ]] && kill -0 "$API_PID" 2>/dev/null; then
         kill "$API_PID" || true
         wait "$API_PID" 2>/dev/null || true
     fi
-    echo "-> Borrando contenedores y volúmenes de Docker..."
-    docker compose down -v
-    echo "-> Limpiando binarios..."
-    rm -rf tmp
-    echo "Limpieza realizada"
+    # Solo se elimina el volumen del proyecto de pruebas creado por este script.
+    if ! docker compose -p "$TEST_PROJECT" down -v; then resultado=1; fi
+    rm -f "$APP_BIN"
+    exit "$resultado"
 }
-
 trap cleanup EXIT
+trap 'exit 130' INT TERM
 
-echo "--Trabajo Previo--"
-echo "borrado de contenedores y volúmenes anteriores..."
-docker compose down -v
-
-echo "Generando código de base de datos sqlc (sqlc generate)"
+echo "Generando sqlc y compilando la aplicación..."
 sqlc generate
-
 mkdir -p tmp
 go build -o "$APP_BIN" .
+docker compose -p "$TEST_PROJECT" up -d
 
-echo "Levantando contenedor PostgreSQL..."
-docker compose up -d
-
-echo "Esperando a que PostgreSQL esté lista..."
-until docker compose exec -T database pg_isready -U tp_user -d tp_db > /dev/null 2>&1; do
-    sleep 1
-done
-sleep 2
-echo "Base de datos lista"
-
-echo "Levantando API REST"
-"$APP_BIN" &
-API_PID=$!
-
-echo "Esperando a que el server HTTP escuche en :8080..."
-for i in {1..15}; do
-    if curl -s http://localhost:8080/zapatillas > /dev/null; then
+lista=false
+for intento in {1..60}; do
+    if docker compose -p "$TEST_PROJECT" exec -T database pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" >/dev/null 2>&1; then
+        lista=true
         break
     fi
     sleep 1
 done
+if [[ "$lista" != true ]]; then echo "PostgreSQL no inició a tiempo." >&2; exit 1; fi
 
-echo "Prueba de Endpoints (Ejecutando requests.bash)"
+echo "Ejecutando pruebas de Go..."
+go test -p 1 -count=1 -v ./...
+"$APP_BIN" >tmp/api-test.log 2>&1 &
+API_PID=$!
+lista=false
+for intento in {1..30}; do
+    if curl --fail --silent "$API_URL/zapatillas" >/dev/null; then lista=true; break; fi
+    if ! kill -0 "$API_PID" 2>/dev/null; then break; fi
+    sleep 1
+done
+if [[ "$lista" != true ]]; then cat tmp/api-test.log >&2; exit 1; fi
 bash ./requests.bash
+echo "Pruebas de Go y HTTP completadas."

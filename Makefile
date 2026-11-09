@@ -1,42 +1,42 @@
+SHELL := /bin/bash
 APP_NAME := api
 
-.PHONY: all generate build db-up run test test-api clean
+ifneq ($(wildcard .env),)
+include .env
+export
+endif
+
+.PHONY: all check-env generate build db-up run test test-api clean
 
 all: build
 
-# Genera el código seguro de acceso a datos con sqlc
+check-env:
+	@test -n "$$DATABASE_URL" || { echo "Copiá .env.example a .env y configurá la base de datos."; exit 1; }
+
 generate:
 	@sqlc generate
 
-# Construye el binario de la aplicación en tmp/
 build: generate
 	@mkdir -p tmp
 	@go build -o tmp/$(APP_NAME) .
 
-# Levanta PostgreSQL y espera a que acepte conexiones
-db-up:
+db-up: check-env
 	@docker compose up -d
-	@echo "Esperando a que PostgreSQL esté listo..."
-	@until docker compose exec -T database pg_isready -U tp_user -d tp_db > /dev/null 2>&1; do sleep 1; done
+	@for intento in {1..60}; do \
+		if docker compose exec -T database pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" >/dev/null 2>&1; then exit 0; fi; \
+		sleep 1; \
+	done; echo "PostgreSQL no inició a tiempo."; exit 1
 
-# Levanta la BD, corre la API y apaga el contenedor automáticamente al presionar Ctrl+C
-run: build db-up
-	@trap 'echo "\n-> Deteniendo contenedor de base de datos..."; docker compose down' INT TERM EXIT; ./tmp/$(APP_NAME)
+# Ctrl+C detiene el servidor y los contenedores, conservando el volumen de datos.
+run: check-env build db-up
+	@trap 'docker compose down' EXIT; trap 'exit 130' INT TERM; ./tmp/$(APP_NAME)
 
-# Ejecuta las pruebas unitarias y de integración limpiando el entorno antes y después
-test: generate
-	@docker compose down -v
-	@docker compose up -d
-	@until docker compose exec -T database pg_isready -U tp_user -d tp_db > /dev/null 2>&1; do sleep 1; done
-	@sleep 2
-	@go test -p 1 -count=1 -v ./...
-	@docker compose down -v
-
-# Ejecuta la prueba integral de la API REST 
-test-api:
+# El script ejecuta Go y las peticiones HTTP en una base de pruebas separada.
+test:
 	@./test-api.sh
 
-# Limpia contenedores, volúmenes y artefactos de compilación
+test-api: test
+
 clean:
-	@docker compose down -v
-	@rm -rf tmp main tp1 api
+	@docker compose down
+	@rm -rf tmp
