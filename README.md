@@ -1,102 +1,78 @@
-# Runner Log - Tracker - Trabajo de Cursada TP4
+# Running Tracker - La Capa de Presentación (TP4)
 
-Registro de zapatillas y entrenamientos con **HTML, CSS y JavaScript**, una **API REST en Go**, **PostgreSQL** y acceso a datos generado por **sqlc**. La interfaz permite listar, crear y eliminar ambas entidades sin recargar la página.
+Aplicación web para el registro y seguimiento de entrenamientos de running y control del desgaste de calzado deportivo[cite: 251].
 
-## Organización
+En esta etapa (**TP4**), el proyecto incorpora una **interfaz de usuario (frontend)** construida con HTML5, CSS3 (Flexbox y CSS Grid) y Vanilla JavaScript que consume de forma asíncrona (`fetch`) la **API REST JSON** desarrollada en Go[cite: 246, 247, 251].
 
-- `static/index.html`: página de inicio con acceso a cada sección.
-- `static/zapatillas.html`: formulario y listado de zapatillas.
-- `static/entrenamientos.html`: formulario de salidas y tabla del historial.
-- `static/app.js`: `fetch`, altas JSON, actualización del DOM y borrado con delegación de eventos.
-- `static/styles.css`: estilos, Grid para la distribución principal y Flexbox para alineaciones.
-- `main.go`: conexión, rutas, archivos estáticos y arranque del servidor.
-- `handlers_zapatillas.go`, `handlers_entrenamientos.go`: operaciones de cada recurso.
-- `handlers.go`: respuestas, lectura de IDs y transacciones compartidas.
-- `middleware.go`: registro de las peticiones.
-- `logic/`: validaciones y cálculos del dominio.
-- `db/schema`, `db/queries`, `db/sqlc`: esquema, consultas y código generado.
+## Arquitectura del Proyecto
 
-Las pantallas anteriores de `templates/` se conservan como antecedente. El nombre **Runner Log - Tracker** se recuperó del README y del título HTML de las ramas `tp1` y `tp2`.
+El sistema respeta la separación en tres capas (Presentación, Lógica de Negocio y Datos)[cite: 12, 132]:
 
-Las páginas se sirven en `/`, `/mis-zapatillas` y `/mis-entrenamientos`. Las rutas `/zapatillas` y `/entrenamientos` siguen siendo los recursos JSON de la API. Cada sección carga `app.js`, que registra los eventos de los elementos presentes en esa página. Entrenamientos consulta las zapatillas activas para completar su selector; zapatillas carga solamente su listado.
+- **`static/` (Capa de Presentación - Cliente):**
+  - `index.html`: Estructura principal con formularios de alta y contenedores dinámicos[cite: 246, 247, 251].
+  - `styles.css`: Diseño responsivo estructurado mediante **CSS Grid** y **Flexbox**[cite: 246, 247, 251].
+  - `app.js`: Cliente JavaScript que se comunica con el backend mediante `fetch` (`GET`, `POST`, `DELETE`), actualiza el DOM dinámicamente sin recargar la página e implementa delegación de eventos para la eliminación de registros[cite: 247, 251].
+- **`main.go` y `handlers*.go` (API REST / Servidor HTTP):** Expone los endpoints JSON (`/zapatillas` y `/entrenamientos`), sirve los archivos estáticos del cliente en `/` e implementa el middleware de logging (`middleware.go`)[cite: 251].
+- **`logic/` (Capa de Lógica de Negocio):** Funciones puras en Go (`ValidateZapatilla`, `ValidateEntrenamiento`, `CalcularRitmo`, `CalcularCalorias`) desacopladas de HTTP y de la base de datos[cite: 2, 251].
+- **`db/` (Capa de Acceso a Datos):** Esquema relacional (`db/schema/schema.sql`), consultas parametrizadas (`db/queries/queries.sql`) y código autogenerado con `sqlc` para PostgreSQL[cite: 251, 255].
 
-## Requisitos y configuración
+## Requisitos Previos
 
-Go **1.26.6** (versión de `go.mod`), sqlc, Docker con Compose, Bash, curl y, para los atajos, make. Los comandos se ejecutan desde `ProgWeb`; en Windows puede usarse Git Bash con Docker Desktop iniciado.
+- **Go** (1.22+)
+- **Docker** y **Docker Compose**
+- **sqlc** (`go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest`)[cite: 30]
+- **curl** y **make**
 
-Si todavía no existe `.env`, copiar la plantilla:
+## Ejecución y Uso
 
-```bash
-cp .env.example .env
-```
+### 1. Levantar la aplicación completa (Desarrollo)
 
-Configurar en `.env` el usuario, contraseña, base y puerto de PostgreSQL. `DATABASE_URL` debe representar esos mismos datos. La plantilla contiene valores locales de ejemplo; `.env` queda excluido de Git. Make exporta la configuración al proceso Go y Compose la utiliza para PostgreSQL.
-
-## Ejecutar la aplicación
+El `Makefile` automatiza la generación de código con `sqlc`, la compilación del binario, el inicio del contenedor de PostgreSQL y la puesta en marcha del servidor[cite: 251, 254]:
 
 ```bash
 make run
 ```
 
-Este comando genera sqlc, compila todos los archivos Go del paquete, inicia PostgreSQL y arranca el servidor. Abrir **http://localhost:8080/** y elegir **Zapatillas** o **Entrenamientos**. También se puede entrar directamente a **http://localhost:8080/mis-zapatillas** o **http://localhost:8080/mis-entrenamientos**. Ctrl+C detiene los servicios y conserva el volumen con los datos.
+Una vez iniciado el servidor, abrir en el navegador:
+👉 **`http://localhost:8080`**
 
-Alternativa en Git Bash si no se dispone de make:
+*(Al presionar `Ctrl + C`, el servidor y los contenedores de Docker se detendrán automáticamente).*
+
+### 2. Ejecutar Pruebas Automatizadas (Unitarias y de Integración)
+
+Levanta una base de datos limpia en Docker, ejecuta todos los tests de Go (`logic`, `db/sqlc`, endpoints REST y servidor de archivos estáticos del TP4) y limpia el entorno al finalizar[cite: 251]:
 
 ```bash
-set -a
-. ./.env
-set +a
-sqlc generate
-docker compose up -d
-# Esperar a que PostgreSQL acepte conexiones antes del último comando.
-docker compose exec database pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
-go run .
+make test
 ```
 
-Al finalizar esa alternativa, detener Go con Ctrl+C y ejecutar `docker compose down` para detener la base conservando los datos.
+### 3. Probar la API REST de punta a punta con cURL
 
-## Comprobar el TP4 desde el navegador
-
-1. Entrar a **Zapatillas** desde el inicio y agregar un par con kilómetros iniciales. Debe aparecer en su listado.
-2. Navegar a **Entrenamientos**: el par debe aparecer en el selector. Registrar una salida y comprobar el historial, el ritmo en **min/km** y las calorías.
-3. Volver a **Zapatillas** para comprobar el kilometraje actualizado. Eliminar la salida desde **Entrenamientos** y comprobar que se descuenta su distancia del par utilizado.
-4. Eliminar la zapatilla desde su página. Debe salir del listado activo y del selector al abrir **Entrenamientos**. Si tiene salidas, éstas conservan la referencia al par retirado.
-5. Comprobar la lista vacía, campos obligatorios, distancia positiva y fecha no futura.
-6. En las herramientas de red del navegador, verificar los `GET`, `POST` y `DELETE`; el documento no se recarga al usar los formularios. Los enlaces de navegación sí abren la página de la otra sección.
-
-El ritmo y las calorías se calculan en Go. El ritmo también se recalcula al leer para mostrar correctamente registros anteriores que lo almacenaban con otra unidad.
-
-El kilometraje representa **kilómetros iniciales + distancias de los entrenamientos registrados**. Corregir distancia o zapatilla con la API ajusta los totales; borrar un entrenamiento descuenta su distancia. Cada operación se confirma por completo o se revierte mediante una transacción. Una zapatilla retirada conserva su historial y no admite nuevas salidas.
-
-## Pruebas automatizadas
+Ejecuta el flujo completo de ciclo de vida (preparación de infraestructura, arranque del servidor en segundo plano, peticiones CRUD mediante `requests.bash` y limpieza final)[cite: 4, 251]:
 
 ```bash
 make test-api
-# Alternativa sin make:
-bash ./test-api.sh
 ```
 
-`test-api.sh` usa exclusivamente el proyecto Docker `progweb-tp4-tests`, con puertos separados (por defecto **55432** para la base y **18080** para HTTP). Genera y compila, ejecuta `go test -p 1 -count=1 -v ./...`, levanta la API y comprueba las peticiones de `requests.bash`. Al terminar detiene su servidor y elimina solamente los contenedores y el volumen de pruebas. La base de desarrollo no se reinicia.
+### 4. Limpieza Manual del Entorno
 
-Las pruebas cubren CRUD, validaciones, ritmo, archivos de la interfaz, correcciones de kilometraje, cambio de zapatilla, rechazo de pares retirados y reversión completa ante un fallo de escritura. `requests.bash` comprueba los códigos HTTP reales y usa los IDs devueltos por la API.
+Para detener contenedores, eliminar volúmenes de datos y borrar binarios compilados[cite: 251]:
 
-También puede ejecutarse `bash ./requests.bash` contra un servidor ya iniciado. Crea sus propios registros de ejemplo y los elimina al completar el recorrido. `API_URL` permite elegir otra dirección.
+```bash
+make clean
+```
 
-El permiso ejecutable de `test-api.sh` debe conservarse al clonar el repositorio. Si se copia como archivo en Linux, se puede restaurar con `chmod +x test-api.sh`. `.gitattributes` mantiene los finales de línea LF de los scripts.
+## Endpoints de la API REST
 
-## Relación con el material de la cátedra
-
-Los números siguientes son **páginas del PDF**, que pueden diferir del número de diapositiva impreso. Los documentos están en la carpeta superior de este espacio de trabajo.
-
-| Implementación | Material local | Ubicación |
-| --- | --- | --- |
-| Formularios, listados, fetch GET/POST/DELETE, refresco y delegación | `tp4.pdf` | pp. 2-3, sección Trabajo de Cursada |
-| Selección, creación de nodos, texto y eventos del DOM | `08-view.pdf` | pp. 21, 24, 26-27 |
-| Grid y Flexbox | `08-view.pdf` | pp. 71-81 |
-| JSON a HTML, `textContent`, carga inicial y eventos delegados | `10-view-dynamic.pdf` | pp. 35, 44-45 |
-| Archivos estáticos, separación de handlers y configuración con `os.Getenv` | `09-view-static.pdf` | pp. 22-23, 33, 36-37 |
-| `.env`, variables de Compose y exclusión de credenciales de Git | `03-docker.pdf` | pp. 17 y 20 |
-| Operaciones atómicas con Begin/Commit/Rollback | `12-diseño.pdf` | pp. 50-53 |
-| Permisos del script, `.env.example` y separación de handlers | Devolución del docente del 28 de octubre | Captura proporcionada en el chat |
-
-Las reglas de kilometraje y la corrección de min/km son adaptaciones al dominio de running del código existente. Se conservaron las tecnologías del proyecto, sin agregar dependencias.
+| Método | Ruta | Descripción | Códigos de Estado |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/zapatillas` | Lista todas las zapatillas activas | `200 OK` |
+| `POST` | `/zapatillas` | Crea una nueva zapatilla | `201 Created`, `400 Bad Request` |
+| `GET` | `/zapatillas/{id}` | Obtiene una zapatilla por su ID | `200 OK`, `404 Not Found` |
+| `PUT` | `/zapatillas/{id}` | Actualiza los datos de una zapatilla | `200 OK`, `400 Bad Request`, `404 Not Found` |
+| `DELETE` | `/zapatillas/{id}` | Elimina lógicamente una zapatilla | `204 No Content`, `404 Not Found` |
+| `GET` | `/entrenamientos` | Lista el historial de entrenamientos | `200 OK` |
+| `POST` | `/entrenamientos` | Registra un entrenamiento y suma Kms al calzado | `201 Created`, `400 Bad Request` |
+| `GET` | `/entrenamientos/{id}` | Obtiene un entrenamiento por su ID | `200 OK`, `404 Not Found` |
+| `PUT` | `/entrenamientos/{id}` | Actualiza un entrenamiento existente | `200 OK`, `400 Bad Request`, `404 Not Found` |
+| `DELETE` | `/entrenamientos/{id}` | Elimina un entrenamiento | `204 No Content`, `404 Not Found` |
