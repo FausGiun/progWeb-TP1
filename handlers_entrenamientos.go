@@ -2,131 +2,91 @@ package main
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	db "tp1/db/sqlc"
 	"tp1/logic"
+	"tp1/views"
 )
 
-type EntrenamientoRequest struct {
-	Fecha       string  `json:"fecha"`
-	DistanciaKm float64 `json:"distancia_km"`
-	TiempoMin   int     `json:"tiempo_min"`
-	Tipo        string  `json:"tipo"`
-	ZapatillaID int     `json:"zapatilla_id"`
-	Lugar       string  `json:"lugar"`
-}
-
-func (h *apiHandler) entrenamientosHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		h.getEntrenamientos(w, r)
-	case http.MethodPost:
-		h.createEntrenamiento(w, r)
-	default:
-		methodNotAllowed(w, "GET, POST")
-	}
-}
-
-func (h *apiHandler) entrenamientoByIDHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := resourceID(r.URL.Path)
-	if err != nil {
-		writeAPIError(w, err, "ID de entrenamiento inválido")
+func (h *webHandler) entrenamientosPage(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
 		return
 	}
-	switch r.Method {
-	case http.MethodGet:
-		h.getEntrenamiento(w, r, id)
-	case http.MethodPut:
-		h.updateEntrenamiento(w, r, id)
-	case http.MethodDelete:
-		h.deleteEntrenamiento(w, r, id)
-	default:
-		methodNotAllowed(w, "GET, PUT, DELETE")
+	if r.Method != http.MethodGet {
+		methodNotAllowed(w, "GET")
+		return
 	}
-}
-
-func parseFecha(value string) (time.Time, error) {
-	if fecha, err := time.Parse("2006-01-02", value); err == nil {
-		return fecha, nil
-	}
-	return time.Parse(time.RFC3339, value)
-}
-
-func readEntrenamiento(r *http.Request) (db.CreateEntrenamientoParams, error) {
-	var input EntrenamientoRequest
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		return db.CreateEntrenamientoParams{}, requestError{http.StatusBadRequest, "JSON inválido"}
-	}
-	fecha, err := parseFecha(input.Fecha)
-	if err != nil {
-		return db.CreateEntrenamientoParams{}, requestError{http.StatusBadRequest, "Fecha inválida (use YYYY-MM-DD)"}
-	}
-	input.Tipo = strings.TrimSpace(input.Tipo)
-	input.Lugar = strings.TrimSpace(input.Lugar)
-	if err := logic.ValidateEntrenamiento(fecha, input.DistanciaKm, input.TiempoMin, input.Tipo, input.ZapatillaID); err != nil {
-		return db.CreateEntrenamientoParams{}, requestError{http.StatusBadRequest, err.Error()}
-	}
-	return db.CreateEntrenamientoParams{
-		Fecha: fecha, DistanciaKm: input.DistanciaKm, TiempoMin: int32(input.TiempoMin),
-		Tipo: input.Tipo, ZapatillaID: int32(input.ZapatillaID),
-		Ritmo:    logic.CalcularRitmo(input.DistanciaKm, input.TiempoMin),
-		Calorias: logic.CalcularCalorias(input.DistanciaKm),
-		Lugar:    sql.NullString{String: input.Lugar, Valid: input.Lugar != ""},
-	}, nil
-}
-
-func (h *apiHandler) getEntrenamientos(w http.ResponseWriter, r *http.Request) {
 	entrenamientos, err := h.queries.ListEntrenamientos(r.Context())
 	if err != nil {
-		writeAPIError(w, err, "Error obteniendo entrenamientos")
+		writeError(w, err, "Error obteniendo entrenamientos")
 		return
 	}
-	if entrenamientos == nil {
-		entrenamientos = []db.Entrenamiento{}
+	zapatillas, err := h.queries.ListZapatillas(r.Context())
+	if err != nil {
+		writeError(w, err, "Error obteniendo zapatillas")
+		return
 	}
-	// El ritmo se deriva de distancia y tiempo, también en registros del TP3.
 	for i := range entrenamientos {
 		entrenamientos[i].Ritmo = logic.CalcularRitmo(entrenamientos[i].DistanciaKm, int(entrenamientos[i].TiempoMin))
 	}
-	writeJSON(w, http.StatusOK, entrenamientos)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := views.IndexPage(entrenamientos, zapatillas, time.Now().Format("2006-01-02")).Render(r.Context(), w); err != nil {
+		writeError(w, err, "Error mostrando entrenamientos")
+	}
 }
 
-func (h *apiHandler) getEntrenamiento(w http.ResponseWriter, r *http.Request, id int32) {
-	entrenamiento, err := h.queries.GetEntrenamiento(r.Context(), id)
-	if errors.Is(err, sql.ErrNoRows) {
-		http.Error(w, "Entrenamiento no encontrado", http.StatusNotFound)
-		return
+func readEntrenamiento(r *http.Request) (db.CreateEntrenamientoParams, error) {
+	if err := r.ParseForm(); err != nil {
+		return db.CreateEntrenamientoParams{}, requestError{http.StatusBadRequest, "Formulario inválido"}
 	}
+	fecha, err := time.Parse("2006-01-02", r.FormValue("fecha"))
 	if err != nil {
-		writeAPIError(w, err, "Error obteniendo entrenamiento")
-		return
+		return db.CreateEntrenamientoParams{}, requestError{http.StatusBadRequest, "Fecha inválida (use YYYY-MM-DD)"}
 	}
-	entrenamiento.Ritmo = logic.CalcularRitmo(entrenamiento.DistanciaKm, int(entrenamiento.TiempoMin))
-	writeJSON(w, http.StatusOK, entrenamiento)
+	distancia, errDistancia := strconv.ParseFloat(r.FormValue("distancia_km"), 64)
+	tiempo, errTiempo := strconv.Atoi(r.FormValue("tiempo_min"))
+	zapatillaID, errZapatilla := strconv.Atoi(r.FormValue("zapatilla_id"))
+	if errDistancia != nil || errTiempo != nil || errZapatilla != nil {
+		return db.CreateEntrenamientoParams{}, requestError{http.StatusBadRequest, "Distancia, tiempo y zapatilla deben contener números válidos"}
+	}
+	tipo := strings.TrimSpace(r.FormValue("tipo"))
+	lugar := strings.TrimSpace(r.FormValue("lugar"))
+	if err := logic.ValidateEntrenamiento(fecha, distancia, tiempo, tipo, zapatillaID); err != nil {
+		return db.CreateEntrenamientoParams{}, requestError{http.StatusBadRequest, err.Error()}
+	}
+	return db.CreateEntrenamientoParams{
+		Fecha: fecha, DistanciaKm: distancia, TiempoMin: int32(tiempo),
+		Tipo: tipo, ZapatillaID: int32(zapatillaID),
+		Ritmo: logic.CalcularRitmo(distancia, tiempo), Calorias: logic.CalcularCalorias(distancia),
+		Lugar: sql.NullString{String: lugar, Valid: lugar != ""},
+	}, nil
 }
 
-func (h *apiHandler) createEntrenamiento(w http.ResponseWriter, r *http.Request) {
+func (h *webHandler) createEntrenamiento(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		methodNotAllowed(w, "POST")
+		return
+	}
 	input, err := readEntrenamiento(r)
 	if err != nil {
-		writeAPIError(w, err, "Error leyendo entrenamiento")
+		writeError(w, err, "Error leyendo entrenamiento")
 		return
 	}
-	var creado db.Entrenamiento
 	err = h.withTransaction(r.Context(), func(q *db.Queries) error {
-		zapatillas, err := lockZapatillas(r.Context(), q, input.ZapatillaID)
+		zapatilla, err := lockZapatilla(r.Context(), q, input.ZapatillaID)
 		if err != nil {
 			return err
 		}
-		if !zapatillas[input.ZapatillaID].Estado {
+		if !zapatilla.Estado {
 			return requestError{http.StatusBadRequest, "La zapatilla seleccionada ya no está activa"}
 		}
-		creado, err = q.CreateEntrenamiento(r.Context(), input)
-		if err != nil {
+		if _, err := q.CreateEntrenamiento(r.Context(), input); err != nil {
 			return err
 		}
 		return q.UpdateZapatillaKms(r.Context(), db.UpdateZapatillaKmsParams{
@@ -134,19 +94,22 @@ func (h *apiHandler) createEntrenamiento(w http.ResponseWriter, r *http.Request)
 		})
 	})
 	if err != nil {
-		writeAPIError(w, err, "Error guardando entrenamiento")
+		writeError(w, err, "Error guardando entrenamiento")
 		return
 	}
-	writeJSON(w, http.StatusCreated, creado)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
-func (h *apiHandler) updateEntrenamiento(w http.ResponseWriter, r *http.Request, id int32) {
-	input, err := readEntrenamiento(r)
-	if err != nil {
-		writeAPIError(w, err, "Error leyendo entrenamiento")
+func (h *webHandler) deleteEntrenamiento(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		methodNotAllowed(w, "POST")
 		return
 	}
-	var actualizado db.Entrenamiento
+	id, err := readFormID(r)
+	if err != nil {
+		writeError(w, err, "Error leyendo entrenamiento")
+		return
+	}
 	err = h.withTransaction(r.Context(), func(q *db.Queries) error {
 		anterior, err := q.GetEntrenamientoForUpdate(r.Context(), id)
 		if errors.Is(err, sql.ErrNoRows) {
@@ -155,47 +118,7 @@ func (h *apiHandler) updateEntrenamiento(w http.ResponseWriter, r *http.Request,
 		if err != nil {
 			return err
 		}
-		zapatillas, err := lockZapatillas(r.Context(), q, anterior.ZapatillaID, input.ZapatillaID)
-		if err != nil {
-			return err
-		}
-		if input.ZapatillaID != anterior.ZapatillaID && !zapatillas[input.ZapatillaID].Estado {
-			return requestError{http.StatusBadRequest, "La zapatilla seleccionada ya no está activa"}
-		}
-		actualizado, err = q.UpdateEntrenamiento(r.Context(), db.UpdateEntrenamientoParams{
-			ID: id, Fecha: input.Fecha, DistanciaKm: input.DistanciaKm, TiempoMin: input.TiempoMin,
-			Tipo: input.Tipo, ZapatillaID: input.ZapatillaID, Ritmo: input.Ritmo,
-			Calorias: input.Calorias, Lugar: input.Lugar,
-		})
-		if err != nil {
-			return err
-		}
-		if err := q.UpdateZapatillaKms(r.Context(), db.UpdateZapatillaKmsParams{
-			ID: anterior.ZapatillaID, KmsAcumulados: -anterior.DistanciaKm,
-		}); err != nil {
-			return err
-		}
-		return q.UpdateZapatillaKms(r.Context(), db.UpdateZapatillaKmsParams{
-			ID: input.ZapatillaID, KmsAcumulados: input.DistanciaKm,
-		})
-	})
-	if err != nil {
-		writeAPIError(w, err, "Error actualizando entrenamiento")
-		return
-	}
-	writeJSON(w, http.StatusOK, actualizado)
-}
-
-func (h *apiHandler) deleteEntrenamiento(w http.ResponseWriter, r *http.Request, id int32) {
-	err := h.withTransaction(r.Context(), func(q *db.Queries) error {
-		anterior, err := q.GetEntrenamientoForUpdate(r.Context(), id)
-		if errors.Is(err, sql.ErrNoRows) {
-			return requestError{http.StatusNotFound, "Entrenamiento no encontrado"}
-		}
-		if err != nil {
-			return err
-		}
-		if _, err := lockZapatillas(r.Context(), q, anterior.ZapatillaID); err != nil {
+		if _, err := lockZapatilla(r.Context(), q, anterior.ZapatillaID); err != nil {
 			return err
 		}
 		if err := q.DeleteEntrenamiento(r.Context(), id); err != nil {
@@ -206,8 +129,8 @@ func (h *apiHandler) deleteEntrenamiento(w http.ResponseWriter, r *http.Request,
 		})
 	})
 	if err != nil {
-		writeAPIError(w, err, "Error eliminando entrenamiento")
+		writeError(w, err, "Error eliminando entrenamiento")
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

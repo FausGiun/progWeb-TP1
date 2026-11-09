@@ -12,30 +12,22 @@ import (
 )
 
 func setupRouter(conn *sql.DB) http.Handler {
-	api := &apiHandler{conn: conn, queries: db.New(conn)}
+	app := &webHandler{conn: conn, queries: db.New(conn)}
 	mux := http.NewServeMux()
-	mux.HandleFunc("/zapatillas", api.zapatillasHandler)
-	mux.HandleFunc("/zapatillas/", api.zapatillaByIDHandler)
-	mux.HandleFunc("/entrenamientos", api.entrenamientosHandler)
-	mux.HandleFunc("/entrenamientos/", api.entrenamientoByIDHandler)
-	// La interfaz y la API comparten origen; fetch usa rutas relativas.
+	mux.HandleFunc("/", app.entrenamientosPage)
+	mux.HandleFunc("/mis-zapatillas", app.zapatillasPage)
+	mux.HandleFunc("/zapatillas", app.createZapatilla)
+	mux.HandleFunc("/entrenamientos", app.createEntrenamiento)
+	mux.HandleFunc("/zapatillas/eliminar", app.deleteZapatilla)
+	mux.HandleFunc("/entrenamientos/eliminar", app.deleteEntrenamiento)
+	// El CSS sigue siendo un archivo estático; templ genera las páginas.
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	paginas := map[string]string{
-		"/":                   "static/index.html",
-		"/mis-zapatillas":     "static/zapatillas.html",
-		"/mis-entrenamientos": "static/entrenamientos.html",
-	}
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		archivo, existe := paginas[r.URL.Path]
-		if !existe {
-			http.NotFound(w, r)
+	mux.HandleFunc("/mis-entrenamientos", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			methodNotAllowed(w, "GET")
 			return
 		}
-		if r.Method != http.MethodGet && r.Method != http.MethodHead {
-			methodNotAllowed(w, "GET, HEAD")
-			return
-		}
-		http.ServeFile(w, r, archivo)
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 	})
 	return loggingMiddleware(mux)
 }

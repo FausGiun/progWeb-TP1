@@ -1,134 +1,79 @@
 package main
 
 import (
-	"database/sql"
-	"encoding/json"
-	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 
 	db "tp1/db/sqlc"
 	"tp1/logic"
+	"tp1/views"
 )
 
-func (h *apiHandler) zapatillasHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		h.getZapatillas(w, r)
-	case http.MethodPost:
-		h.createZapatilla(w, r)
-	default:
-		methodNotAllowed(w, "GET, POST")
-	}
-}
-
-func (h *apiHandler) zapatillaByIDHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := resourceID(r.URL.Path)
-	if err != nil {
-		writeAPIError(w, err, "ID de zapatilla inválido")
+func (h *webHandler) zapatillasPage(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		methodNotAllowed(w, "GET")
 		return
 	}
-	switch r.Method {
-	case http.MethodGet:
-		h.getZapatilla(w, r, id)
-	case http.MethodPut:
-		h.updateZapatilla(w, r, id)
-	case http.MethodDelete:
-		h.deleteZapatilla(w, r, id)
-	default:
-		methodNotAllowed(w, "GET, PUT, DELETE")
-	}
-}
-
-func (h *apiHandler) getZapatillas(w http.ResponseWriter, r *http.Request) {
 	zapatillas, err := h.queries.ListZapatillas(r.Context())
 	if err != nil {
-		writeAPIError(w, err, "Error obteniendo zapatillas")
+		writeError(w, err, "Error obteniendo zapatillas")
 		return
 	}
-	if zapatillas == nil {
-		zapatillas = []db.Zapatilla{}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := views.ZapatillasPage(zapatillas).Render(r.Context(), w); err != nil {
+		writeError(w, err, "Error mostrando zapatillas")
 	}
-	writeJSON(w, http.StatusOK, zapatillas)
 }
 
-func (h *apiHandler) createZapatilla(w http.ResponseWriter, r *http.Request) {
-	var input db.CreateZapatillaParams
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, "JSON inválido", http.StatusBadRequest)
+func (h *webHandler) createZapatilla(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		methodNotAllowed(w, "POST")
 		return
 	}
-	input.MarcaModelo = strings.TrimSpace(input.MarcaModelo)
-	if err := logic.ValidateZapatilla(input.MarcaModelo, input.KmsAcumulados); err != nil {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Formulario inválido", http.StatusBadRequest)
+		return
+	}
+	marca := strings.TrimSpace(r.FormValue("marca_modelo"))
+	kilometros, err := strconv.ParseFloat(r.FormValue("kms_acumulados"), 64)
+	if err != nil {
+		http.Error(w, "Los kilómetros deben ser un número", http.StatusBadRequest)
+		return
+	}
+	if err := logic.ValidateZapatilla(marca, kilometros); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	input.Estado = true
-	creada, err := h.queries.CreateZapatilla(r.Context(), input)
-	if err != nil {
-		writeAPIError(w, err, "Error guardando zapatilla")
-		return
-	}
-	writeJSON(w, http.StatusCreated, creada)
-}
-
-func (h *apiHandler) getZapatilla(w http.ResponseWriter, r *http.Request, id int32) {
-	zapatilla, err := h.queries.GetZapatilla(r.Context(), id)
-	if errors.Is(err, sql.ErrNoRows) {
-		http.Error(w, "Zapatilla no encontrada", http.StatusNotFound)
-		return
-	}
-	if err != nil {
-		writeAPIError(w, err, "Error buscando zapatilla")
-		return
-	}
-	writeJSON(w, http.StatusOK, zapatilla)
-}
-
-func (h *apiHandler) updateZapatilla(w http.ResponseWriter, r *http.Request, id int32) {
-	var input db.UpdateZapatillaParams
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, "JSON inválido", http.StatusBadRequest)
-		return
-	}
-	input.MarcaModelo = strings.TrimSpace(input.MarcaModelo)
-	if err := logic.ValidateZapatilla(input.MarcaModelo, input.KmsAcumulados); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	input.ID = id
-	var actualizada db.Zapatilla
-	err := h.withTransaction(r.Context(), func(q *db.Queries) error {
-		if _, err := lockZapatillas(r.Context(), q, id); err != nil {
-			return err
-		}
-		registrados, err := q.GetKilometrosRegistrados(r.Context(), id)
-		if err != nil {
-			return err
-		}
-		if input.KmsAcumulados+0.000001 < registrados {
-			return requestError{http.StatusBadRequest, "Los kilómetros no pueden ser menores a los entrenamientos registrados"}
-		}
-		actualizada, err = q.UpdateZapatilla(r.Context(), input)
-		return err
+	_, err = h.queries.CreateZapatilla(r.Context(), db.CreateZapatillaParams{
+		MarcaModelo: marca, KmsAcumulados: kilometros, Estado: true,
 	})
 	if err != nil {
-		writeAPIError(w, err, "Error actualizando zapatilla")
+		writeError(w, err, "Error guardando zapatilla")
 		return
 	}
-	writeJSON(w, http.StatusOK, actualizada)
+	http.Redirect(w, r, "/mis-zapatillas", http.StatusSeeOther)
 }
 
-func (h *apiHandler) deleteZapatilla(w http.ResponseWriter, r *http.Request, id int32) {
-	err := h.withTransaction(r.Context(), func(q *db.Queries) error {
-		if _, err := lockZapatillas(r.Context(), q, id); err != nil {
+func (h *webHandler) deleteZapatilla(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		methodNotAllowed(w, "POST")
+		return
+	}
+	id, err := readFormID(r)
+	if err != nil {
+		writeError(w, err, "Error leyendo zapatilla")
+		return
+	}
+	err = h.withTransaction(r.Context(), func(q *db.Queries) error {
+		if _, err := lockZapatilla(r.Context(), q, id); err != nil {
 			return err
 		}
 		return q.DeleteZapatilla(r.Context(), id)
 	})
 	if err != nil {
-		writeAPIError(w, err, "Error eliminando zapatilla")
+		writeError(w, err, "Error eliminando zapatilla")
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	http.Redirect(w, r, "/mis-zapatillas", http.StatusSeeOther)
 }

@@ -59,9 +59,9 @@ input:focus, select:focus { border-color: var(--blue); }
 .optional { color: var(--muted); font-weight: 400; }
 #ayuda-zapatilla { margin-top: 7px; font-size: 12px; }
 .calculation-note { background: #edf4f8; border-radius: 7px; color: #41647d; font-size: 12px; padding: 11px 12px; margin: 18px 0 0; }
-button[type="submit"] { width: 100%; border: 0; display: flex; justify-content: space-between; align-items: center; margin-top: 22px; padding: 12px 14px; color: #fff; background: var(--blue); border-radius: 7px; font-size: 13px; font-weight: 650; }
-button[type="submit"] span { font-size: 20px; line-height: 1; font-weight: 400; }
-button[type="submit"]:hover { background: #16496e; }
+form.card > button[type="submit"] { width: 100%; border: 0; display: flex; justify-content: space-between; align-items: center; margin-top: 22px; padding: 12px 14px; color: #fff; background: var(--blue); border-radius: 7px; font-size: 13px; font-weight: 650; }
+form.card > button[type="submit"] span { font-size: 20px; line-height: 1; font-weight: 400; }
+form.card > button[type="submit"]:hover { background: #16496e; }
 button:disabled, select:disabled { cursor: not-allowed; opacity: .55; }
 .message { font-size: 13px; padding: 12px 14px; border-radius: 7px; margin: 16px 0 0; overflow-wrap: anywhere; }
 .success { color: #216046; background: #eaf6ef; border: 1px solid #cee8d8; }
@@ -74,6 +74,7 @@ button:disabled, select:disabled { cursor: not-allowed; opacity: .55; }
 .shoe-distance { display: block; color: var(--muted); font-size: 13px; margin-top: 4px; }
 .delete-button { border: 1px solid #e8d7d4; background: #fff; color: #9d443b; font-size: 12px; border-radius: 6px; padding: 7px 10px; flex-shrink: 0; }
 .delete-button:hover { background: #fff0ee; border-color: #d8b0a9; }
+.delete-form { margin: 0; flex-shrink: 0; }
 .empty-state { padding: 30px 16px; text-align: center; font-size: 14px; color: var(--muted); background: #f8fafb; border-radius: 8px; }
 .table-scroll { overflow-x: auto; margin-top: 22px; }
 table { border-collapse: collapse; width: 100%; font-size: 12px; text-align: left; }

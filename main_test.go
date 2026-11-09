@@ -1,204 +1,167 @@
 package main
 
 import (
-	"bytes"
+	"context"
 	"database/sql"
-	"encoding/json"
-	"fmt"
+	"math"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
+	"strconv"
+	"strings"
 	"testing"
-	db "tp1/db/sqlc"
 
-	_ "github.com/lib/pq"
+	db "tp1/db/sqlc"
 )
 
-func TestAPIREST_CRUDCompleto(t *testing.T) {
+func testDatabase(t *testing.T) *sql.DB {
+	t.Helper()
 	dsn := os.Getenv("TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Fatal("Falta TEST_DATABASE_URL. Ejecutá make test para usar la base de pruebas.")
+		t.Fatal("Falta TEST_DATABASE_URL. Ejecutá make test.")
 	}
 	conn, err := sql.Open("postgres", dsn)
 	if err != nil {
-		t.Fatalf("Error abriendo conexión de prueba: %v", err)
+		t.Fatal(err)
 	}
-	defer conn.Close()
-
-	// Limpiamos las tablas antes de iniciar para garantizar un estado inicial limpio
-	if _, err := conn.Exec("TRUNCATE entrenamientos, zapatillas RESTART IDENTITY CASCADE;"); err != nil {
-		t.Fatalf("Error limpiando tablas antes del test: %v", err)
+	t.Cleanup(func() { conn.Close() })
+	if _, err := conn.Exec("TRUNCATE entrenamientos, zapatillas RESTART IDENTITY CASCADE"); err != nil {
+		t.Fatal(err)
 	}
+	return conn
+}
 
+func webRequest(t *testing.T, router http.Handler, method, path string, form url.Values, status int) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(method, path, strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, req)
+	if response.Code != status {
+		t.Fatalf("%s %s: estado %d, esperado %d: %s", method, path, response.Code, status, response.Body.String())
+	}
+	return response
+}
+
+func TestRutas(t *testing.T) {
+	router := setupRouter(nil)
+	webRequest(t, router, "GET", "/static/styles.css", nil, 200)
+	webRequest(t, router, "GET", "/no-existe", nil, 404)
+	webRequest(t, router, "POST", "/", nil, 405)
+	webRequest(t, router, "GET", "/zapatillas", nil, 405)
+	response := webRequest(t, router, "GET", "/mis-entrenamientos", nil, 303)
+	if response.Header().Get("Location") != "/" {
+		t.Fatal("La ruta anterior de entrenamientos debe llevar al inicio")
+	}
+}
+
+func TestFormulariosYRenderizado(t *testing.T) {
+	conn := testDatabase(t)
+	q := db.New(conn)
+	ctx := context.Background()
 	router := setupRouter(conn)
+	response := webRequest(t, router, "GET", "/", nil, 200)
+	if !strings.Contains(response.Body.String(), "disabled") || strings.Contains(response.Body.String(), "app.js") {
+		t.Fatal("Sin zapatillas, el formulario debe estar deshabilitado y funcionar sin app.js")
+	}
+	webRequest(t, router, "POST", "/zapatillas", url.Values{"marca_modelo": {""}, "kms_acumulados": {"0"}}, 400)
+	for _, invalid := range []string{"abc", "-1", "NaN", "+Inf"} {
+		webRequest(t, router, "POST", "/zapatillas", url.Values{"marca_modelo": {"Prueba"}, "kms_acumulados": {invalid}}, 400)
+	}
+	response = webRequest(t, router, "POST", "/zapatillas", url.Values{
+		"marca_modelo": {"Asics <b>prueba</b>"}, "kms_acumulados": {"12.5"},
+	}, 303)
+	if response.Header().Get("Location") != "/mis-zapatillas" {
+		t.Fatal("El alta debe redirigir a la página de zapatillas")
+	}
+	zapatillas, err := q.ListZapatillas(ctx)
+	if err != nil || len(zapatillas) != 1 {
+		t.Fatalf("Alta de zapatilla: %v, %v", zapatillas, err)
+	}
+	zapatillaID := strconv.Itoa(int(zapatillas[0].ID))
+	response = webRequest(t, router, "GET", "/mis-zapatillas", nil, 200)
+	if !strings.Contains(response.Body.String(), "Asics &lt;b&gt;prueba&lt;/b&gt;") || strings.Contains(response.Body.String(), `id="form-entrenamiento"`) {
+		t.Fatal("La página debe mostrar los datos escapados y solo el formulario de zapatillas")
+	}
+	response = webRequest(t, router, "GET", "/", nil, 200)
+	if strings.Contains(response.Body.String(), "disabled") || strings.Contains(response.Body.String(), `id="form-zapatilla"`) {
+		t.Fatal("El entrenamiento debe habilitarse al existir zapatillas y tener su propia página")
+	}
+	form := url.Values{
+		"fecha": {"2025-05-10"}, "distancia_km": {"10"}, "tiempo_min": {"50"},
+		"tipo": {"Fondo"}, "zapatilla_id": {zapatillaID}, "lugar": {"Parque <script>prueba</script>"},
+	}
+	response = webRequest(t, router, "POST", "/entrenamientos", form, 303)
+	if response.Header().Get("Location") != "/" {
+		t.Fatal("El alta debe aplicar POST/Redirect/GET hacia el inicio")
+	}
+	entrenamientos, err := q.ListEntrenamientos(ctx)
+	if err != nil || len(entrenamientos) != 1 {
+		t.Fatalf("Alta de entrenamiento: %v, %v", entrenamientos, err)
+	}
+	if entrenamientos[0].Ritmo != 5 || entrenamientos[0].Calorias != 650 {
+		t.Fatal("El servidor debe calcular ritmo y calorías")
+	}
+	zapatilla, err := q.GetZapatilla(ctx, zapatillas[0].ID)
+	if err != nil || zapatilla.KmsAcumulados != 22.5 {
+		t.Fatalf("Kilometraje luego del alta: %v, %v", zapatilla.KmsAcumulados, err)
+	}
+	response = webRequest(t, router, "GET", "/", nil, 200)
+	html := response.Body.String()
+	if !strings.Contains(response.Header().Get("Content-Type"), "text/html") || !strings.Contains(html, "5.00 min/km") || !strings.Contains(html, "Parque &lt;script&gt;prueba&lt;/script&gt;") || strings.Contains(html, "<script") {
+		t.Fatal("GET / debe contener el listado HTML completo y escapar los datos")
+	}
+	webRequest(t, router, "GET", "/", nil, 200)
+	registros, err := q.ListEntrenamientos(ctx)
+	if err != nil || len(registros) != 1 {
+		t.Fatal("Actualizar la página no debe repetir el POST")
+	}
+	entrenamientoID := strconv.Itoa(int(entrenamientos[0].ID))
+	response = webRequest(t, router, "POST", "/entrenamientos/eliminar", url.Values{"id": {entrenamientoID}}, 303)
+	if response.Header().Get("Location") != "/" {
+		t.Fatal("El borrado debe redirigir al listado")
+	}
+	zapatilla, err = q.GetZapatilla(ctx, zapatillas[0].ID)
+	if err != nil || math.Abs(zapatilla.KmsAcumulados-12.5) > 0.000001 {
+		t.Fatal("Borrar una salida debe descontar su distancia")
+	}
+	webRequest(t, router, "POST", "/entrenamientos/eliminar", url.Values{"id": {entrenamientoID}}, 404)
+	webRequest(t, router, "POST", "/zapatillas/eliminar", url.Values{"id": {"abc"}}, 400)
+	webRequest(t, router, "POST", "/zapatillas/eliminar", url.Values{"id": {zapatillaID}}, 303)
+	webRequest(t, router, "POST", "/entrenamientos", form, 400)
+	registros, err = q.ListEntrenamientos(ctx)
+	if err != nil || len(registros) != 0 {
+		t.Fatal("La zapatilla retirada no debe admitir nuevas salidas")
+	}
+}
 
-	var zapatillaID int32
-	var entrenamientoID int32
-
-	// 1. CICLO CRUD DE ZAPATILLAS
-	t.Run("1. POST /zapatillas valido (201 Created)", func(t *testing.T) {
-		body := []byte(`{"marca_modelo": "Adidas Boston 12", "kms_acumulados": 10.5}`)
-		req := httptest.NewRequest(http.MethodPost, "/zapatillas", bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-		rr := httptest.NewRecorder()
-
-		router.ServeHTTP(rr, req)
-
-		if rr.Code != http.StatusCreated {
-			t.Fatalf("Se esperaba 201 Created, se obtuvo %d: %s", rr.Code, rr.Body.String())
-		}
-
-		var creada db.Zapatilla
-		if err := json.NewDecoder(rr.Body).Decode(&creada); err != nil {
-			t.Fatalf("Error decodificando respuesta JSON: %v", err)
-		}
-		if creada.MarcaModelo != "Adidas Boston 12" || !creada.Estado {
-			t.Errorf("Datos incorrectos en zapatilla creada: %+v", creada)
-		}
-		zapatillaID = creada.ID
-	})
-
-	t.Run("2. POST /zapatillas invalido (400 Bad Request)", func(t *testing.T) {
-		body := []byte(`{"marca_modelo": "", "kms_acumulados": -5}`)
-		req := httptest.NewRequest(http.MethodPost, "/zapatillas", bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-		rr := httptest.NewRecorder()
-
-		router.ServeHTTP(rr, req)
-
-		if rr.Code != http.StatusBadRequest {
-			t.Errorf("Se esperaba 400 Bad Request, se obtuvo %d", rr.Code)
-		}
-	})
-
-	t.Run("3. GET /zapatillas listar (200 OK)", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/zapatillas", nil)
-		rr := httptest.NewRecorder()
-
-		router.ServeHTTP(rr, req)
-
-		if rr.Code != http.StatusOK {
-			t.Fatalf("Se esperaba 200 OK, se obtuvo %d", rr.Code)
-		}
-
-		var lista []db.Zapatilla
-		if err := json.NewDecoder(rr.Body).Decode(&lista); err != nil {
-			t.Fatalf("Error decodificando lista JSON: %v", err)
-		}
-		if len(lista) != 1 {
-			t.Errorf("Se esperaba 1 zapatilla en la lista, se obtuvieron %d", len(lista))
-		}
-	})
-
-	t.Run("4. GET /zapatillas/{id} obtener por ID (200 OK)", func(t *testing.T) {
-		url := fmt.Sprintf("/zapatillas/%d", zapatillaID)
-		req := httptest.NewRequest(http.MethodGet, url, nil)
-		rr := httptest.NewRecorder()
-
-		router.ServeHTTP(rr, req)
-
-		if rr.Code != http.StatusOK {
-			t.Fatalf("Se esperaba 200 OK, se obtuvo %d", rr.Code)
-		}
-	})
-
-	t.Run("5. PUT /zapatillas/{id} actualizar (200 OK)", func(t *testing.T) {
-		url := fmt.Sprintf("/zapatillas/%d", zapatillaID)
-		body := []byte(`{"marca_modelo": "Adidas Boston 12 Pro", "kms_acumulados": 25.0, "estado": true}`)
-		req := httptest.NewRequest(http.MethodPut, url, bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-		rr := httptest.NewRecorder()
-
-		router.ServeHTTP(rr, req)
-
-		if rr.Code != http.StatusOK {
-			t.Fatalf("Se esperaba 200 OK, se obtuvo %d: %s", rr.Code, rr.Body.String())
-		}
-
-		var actualizada db.Zapatilla
-		_ = json.NewDecoder(rr.Body).Decode(&actualizada)
-		if actualizada.MarcaModelo != "Adidas Boston 12 Pro" || actualizada.KmsAcumulados != 25.0 {
-			t.Errorf("No se actualizaron los datos correctamente: %+v", actualizada)
-		}
-	})
-	// 2. CICLO CRUD DE ENTRENAMIENTOS
-	t.Run("6. POST /entrenamientos valido (201 Created)", func(t *testing.T) {
-		payload := fmt.Sprintf(`{"fecha": "2025-05-10", "distancia_km": 10.0, "tiempo_min": 50, "tipo": "Fondo", "zapatilla_id": %d, "lugar": "Parque"}`, zapatillaID)
-		req := httptest.NewRequest(http.MethodPost, "/entrenamientos", bytes.NewBufferString(payload))
-		req.Header.Set("Content-Type", "application/json")
-		rr := httptest.NewRecorder()
-
-		router.ServeHTTP(rr, req)
-
-		if rr.Code != http.StatusCreated {
-			t.Fatalf("Se esperaba 201 Created, se obtuvo %d: %s", rr.Code, rr.Body.String())
-		}
-
-		var creado db.Entrenamiento
-		if err := json.NewDecoder(rr.Body).Decode(&creado); err != nil {
-			t.Fatalf("Error decodificando entrenamiento: %v", err)
-		}
-		if creado.Ritmo != 5.0 || creado.Calorias != 650 {
-			t.Errorf("Cálculos de lógica pura incorrectos: ritmo=%v, calorias=%v", creado.Ritmo, creado.Calorias)
-		}
-		entrenamientoID = creado.ID
-	})
-
-	t.Run("7. PUT /entrenamientos/{id} actualizar (200 OK)", func(t *testing.T) {
-		url := fmt.Sprintf("/entrenamientos/%d", entrenamientoID)
-		payload := fmt.Sprintf(`{"fecha": "2025-05-10", "distancia_km": 12.0, "tiempo_min": 60, "tipo": "Pasadas", "zapatilla_id": %d, "lugar": "Pista"}`, zapatillaID)
-		req := httptest.NewRequest(http.MethodPut, url, bytes.NewBufferString(payload))
-		req.Header.Set("Content-Type", "application/json")
-		rr := httptest.NewRecorder()
-
-		router.ServeHTTP(rr, req)
-
-		if rr.Code != http.StatusOK {
-			t.Fatalf("Se esperaba 200 OK, se obtuvo %d: %s", rr.Code, rr.Body.String())
+func TestEntrenamientoAtomico(t *testing.T) {
+	conn := testDatabase(t)
+	q := db.New(conn)
+	ctx := context.Background()
+	zapatilla, err := q.CreateZapatilla(ctx, db.CreateZapatillaParams{MarcaModelo: "Prueba", KmsAcumulados: 20, Estado: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := conn.Exec("ALTER TABLE zapatillas ADD CONSTRAINT tp5_test_maxkms CHECK (kms_acumulados <= 25)"); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if _, err := conn.Exec("ALTER TABLE zapatillas DROP CONSTRAINT tp5_test_maxkms"); err != nil {
+			t.Error(err)
 		}
 	})
-
-	t.Run("8. DELETE /entrenamientos/{id} eliminar (204 No Content)", func(t *testing.T) {
-		url := fmt.Sprintf("/entrenamientos/%d", entrenamientoID)
-		req := httptest.NewRequest(http.MethodDelete, url, nil)
-		rr := httptest.NewRecorder()
-
-		router.ServeHTTP(rr, req)
-
-		if rr.Code != http.StatusNoContent {
-			t.Fatalf("Se esperaba 204 No Content, se obtuvo %d", rr.Code)
-		}
-	})
-
-	t.Run("9. GET /entrenamientos/{id} eliminado (404 Not Found)", func(t *testing.T) {
-		url := fmt.Sprintf("/entrenamientos/%d", entrenamientoID)
-		req := httptest.NewRequest(http.MethodGet, url, nil)
-		rr := httptest.NewRecorder()
-
-		router.ServeHTTP(rr, req)
-
-		if rr.Code != http.StatusNotFound {
-			t.Errorf("Se esperaba 404 Not Found, se obtuvo %d", rr.Code)
-		}
-	})
-
-	t.Run("10. DELETE /zapatillas/{id} y verificar 405 Method Not Allowed", func(t *testing.T) {
-		url := fmt.Sprintf("/zapatillas/%d", zapatillaID)
-		reqDel := httptest.NewRequest(http.MethodDelete, url, nil)
-		rrDel := httptest.NewRecorder()
-		router.ServeHTTP(rrDel, reqDel)
-
-		if rrDel.Code != http.StatusNoContent {
-			t.Errorf("Se esperaba 204 No Content al borrar zapatilla, se obtuvo %d", rrDel.Code)
-		}
-
-		// Probar método no soportado (PATCH)-405 Method Not Allowed
-		reqPatch := httptest.NewRequest(http.MethodPatch, "/zapatillas", nil)
-		rrPatch := httptest.NewRecorder()
-		router.ServeHTTP(rrPatch, reqPatch)
-
-		if rrPatch.Code != http.StatusMethodNotAllowed {
-			t.Errorf("Se esperaba 405 Method Not Allowed, se obtuvo %d", rrPatch.Code)
-		}
-	})
+	webRequest(t, setupRouter(conn), "POST", "/entrenamientos", url.Values{
+		"fecha": {"2025-05-10"}, "distancia_km": {"10"}, "tiempo_min": {"50"},
+		"tipo": {"Fondo"}, "zapatilla_id": {strconv.Itoa(int(zapatilla.ID))},
+	}, 500)
+	actual, err := q.GetZapatilla(ctx, zapatilla.ID)
+	if err != nil || actual.KmsAcumulados != 20 {
+		t.Fatal("Una operación fallida debe conservar el kilometraje anterior")
+	}
+	registros, err := q.ListEntrenamientos(ctx)
+	if err != nil || len(registros) != 0 {
+		t.Fatal("Debe revertirse también el entrenamiento si falla la actualización de kilómetros")
+	}
 }

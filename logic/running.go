@@ -2,6 +2,7 @@ package logic
 
 import (
 	"errors"
+	"math"
 	"strings"
 	"time"
 )
@@ -10,8 +11,8 @@ func ValidateZapatilla(marcaModelo string, kmsAcumulados float64) error {
 	if strings.TrimSpace(marcaModelo) == "" {
 		return errors.New("la marca y modelo de la zapatilla no pueden estar vacíos")
 	}
-	if kmsAcumulados < 0 {
-		return errors.New("los kilómetros acumulados no pueden ser negativos")
+	if math.IsNaN(kmsAcumulados) || math.IsInf(kmsAcumulados, 0) || kmsAcumulados < 0 {
+		return errors.New("los kilómetros acumulados deben ser un número mayor o igual a 0")
 	}
 	return nil
 }
@@ -23,7 +24,7 @@ func ValidateEntrenamiento(fecha time.Time, distanciaKm float64, tiempoMin int, 
 	if fecha.After(time.Now()) {
 		return errors.New("la fecha del entrenamiento no puede ser en el futuro")
 	}
-	if distanciaKm <= 0 {
+	if math.IsNaN(distanciaKm) || math.IsInf(distanciaKm, 0) || distanciaKm <= 0 {
 		return errors.New("la distancia debe ser mayor a 0 km")
 	}
 	if tiempoMin <= 0 || tiempoMin > 2147483647 {

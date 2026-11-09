@@ -1,0 +1,82 @@
+package views
+
+import (
+	"fmt"
+	"strconv"
+	db "tp1/db/sqlc"
+)
+
+func nombreZapatilla(id int32, zapatillas []db.Zapatilla) string {
+	for _, zapatilla := range zapatillas {
+		if zapatilla.ID == id {
+			return zapatilla.MarcaModelo
+		}
+	}
+	return fmt.Sprintf("Par #%d (retirado)", id)
+}
+
+templ ZapatillasList(zapatillas []db.Zapatilla) {
+	<div class="card list-card">
+		<h2>Tu calzado activo</h2>
+		<p class="hint">El kilometraje se actualiza con los entrenamientos registrados.</p>
+		<ul id="lista-zapatillas" class="shoe-list" aria-label="Zapatillas activas">
+			if len(zapatillas) == 0 {
+				<li class="empty-state">No tenes zapatillas activas. Agregá un par.</li>
+			}
+			for _, zapatilla := range zapatillas {
+				<li class="shoe-item">
+					<div>
+						<span class="shoe-name">{ zapatilla.MarcaModelo }</span>
+						<span class="shoe-distance">{ fmt.Sprintf("%.2f km acumulados", zapatilla.KmsAcumulados) }</span>
+					</div>
+					<form class="delete-form" action="/zapatillas/eliminar" method="post">
+						<input type="hidden" name="id" value={ strconv.Itoa(int(zapatilla.ID)) }/>
+						<button class="delete-button" type="submit" aria-label={ "Eliminar " + zapatilla.MarcaModelo }>Eliminar</button>
+					</form>
+				</li>
+			}
+		</ul>
+		<p class="footnote">Eliminar un par lo retira del listado activo y conserva su historial.</p>
+	</div>
+}
+
+templ EntrenamientosList(entrenamientos []db.Entrenamiento, zapatillas []db.Zapatilla) {
+	<div class="card list-card history-card">
+		<h2>Historial de entrenamientos</h2>
+		<p class="hint">Tus últimas salidas aparecen primero.</p>
+		<div class="table-scroll" role="region" aria-label="Historial, desplazable horizontalmente" tabindex="0">
+			<table>
+				<caption class="visually-hidden">Entrenamientos registrados</caption>
+				<thead><tr><th scope="col">Fecha / sesión</th><th scope="col">Distancia</th><th scope="col">Tiempo</th><th scope="col">Ritmo</th><th scope="col">Calorías</th><th scope="col">Zapatilla</th><th scope="col">Lugar</th><th scope="col">Acción</th></tr></thead>
+				<tbody id="lista-entrenamientos">
+					if len(entrenamientos) == 0 {
+						<tr><td colspan="8" class="empty-state">Todavía no hay salidas registradas. Sumá la primera.</td></tr>
+					}
+					for _, entrenamiento := range entrenamientos {
+						<tr>
+							<td>{ entrenamiento.Fecha.Format("02/01/2006") }<span class="session-type">{ entrenamiento.Tipo }</span></td>
+							<td class="number">{ fmt.Sprintf("%.2f km", entrenamiento.DistanciaKm) }</td>
+							<td>{ fmt.Sprintf("%d min", entrenamiento.TiempoMin) }</td>
+							<td class="number">{ fmt.Sprintf("%.2f min/km", entrenamiento.Ritmo) }</td>
+							<td>{ fmt.Sprintf("%d kcal", entrenamiento.Calorias) }</td>
+							<td>{ nombreZapatilla(entrenamiento.ZapatillaID, zapatillas) }</td>
+							<td>
+								if entrenamiento.Lugar.Valid {
+									{ entrenamiento.Lugar.String }
+								} else {
+									—
+								}
+							</td>
+							<td>
+								<form class="delete-form" action="/entrenamientos/eliminar" method="post">
+									<input type="hidden" name="id" value={ strconv.Itoa(int(entrenamiento.ID)) }/>
+									<button class="delete-button" type="submit" aria-label={ "Eliminar entrenamiento del " + entrenamiento.Fecha.Format("02/01/2006") }>Eliminar</button>
+								</form>
+							</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	</div>
+}

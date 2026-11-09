@@ -11,7 +11,7 @@ set -a
 set +a
 
 # Proyecto y puertos independientes: no se reinicia la base de desarrollo.
-TEST_PROJECT="progweb-tp4-tests"
+TEST_PROJECT="progweb-tp5-tests"
 export DB_PORT="${TEST_DB_PORT:-55432}"
 export TEST_DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:${DB_PORT}/${POSTGRES_DB}?sslmode=disable"
 export DATABASE_URL="$TEST_DATABASE_URL"
@@ -36,8 +36,9 @@ cleanup() {
 trap cleanup EXIT
 trap 'exit 130' INT TERM
 
-echo "Generando sqlc y compilando la aplicación..."
+echo "Generando sqlc, templ y compilando la aplicación..."
 sqlc generate
+templ generate
 mkdir -p tmp
 go build -o "$APP_BIN" .
 docker compose -p "$TEST_PROJECT" up -d
@@ -58,7 +59,7 @@ go test -p 1 -count=1 -v ./...
 API_PID=$!
 lista=false
 for intento in {1..30}; do
-    if curl --fail --silent "$API_URL/zapatillas" >/dev/null; then lista=true; break; fi
+    if curl --fail --silent "$API_URL/" >/dev/null; then lista=true; break; fi
     if ! kill -0 "$API_PID" 2>/dev/null; then break; fi
     sleep 1
 done

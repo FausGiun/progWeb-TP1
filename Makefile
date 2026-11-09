@@ -15,6 +15,7 @@ check-env:
 
 generate:
 	@sqlc generate
+	@templ generate
 
 build: generate
 	@mkdir -p tmp

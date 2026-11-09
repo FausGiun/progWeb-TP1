@@ -1,102 +1,109 @@
-# Runner Log - Tracker - Trabajo de Cursada TP4
+# Runner Log - Tracker - Trabajo de Cursada TP5
 
-Registro de zapatillas y entrenamientos con **HTML, CSS y JavaScript**, una **API REST en Go**, **PostgreSQL** y acceso a datos generado por **sqlc**. La interfaz permite listar, crear y eliminar ambas entidades sin recargar la página.
+Aplicación Go con vistas **templ**, acceso a datos mediante **sqlc** y **PostgreSQL**. Permite registrar zapatillas y entrenamientos y eliminar registros mediante formularios HTML.
 
-## Organización
+## Cómo funciona
 
-- `static/index.html`: página de inicio con acceso a cada sección.
-- `static/zapatillas.html`: formulario y listado de zapatillas.
-- `static/entrenamientos.html`: formulario de salidas y tabla del historial.
-- `static/app.js`: `fetch`, altas JSON, actualización del DOM y borrado con delegación de eventos.
-- `static/styles.css`: estilos, Grid para la distribución principal y Flexbox para alineaciones.
-- `main.go`: conexión, rutas, archivos estáticos y arranque del servidor.
-- `handlers_zapatillas.go`, `handlers_entrenamientos.go`: operaciones de cada recurso.
-- `handlers.go`: respuestas, lectura de IDs y transacciones compartidas.
-- `middleware.go`: registro de las peticiones.
-- `logic/`: validaciones y cálculos del dominio.
-- `db/schema`, `db/queries`, `db/sqlc`: esquema, consultas y código generado.
+1. El navegador pide una página con GET.
+2. El handler consulta la base con sqlc y renderiza el HTML con templ.
+3. El usuario envía un formulario con POST.
+4. Go usa `r.ParseForm()`, valida y guarda los datos.
+5. `http.Redirect` devuelve una redirección 303 y el navegador pide el listado actualizado con GET. Es el patrón **Post/Redirect/Get (PRG)**.
 
-Las pantallas anteriores de `templates/` se conservan como antecedente. El nombre **Runner Log - Tracker** se recuperó del README y del título HTML de las ramas `tp1` y `tp2`.
+Las páginas funcionan sin JavaScript. `/` muestra el formulario y el historial de entrenamientos. `/mis-zapatillas` tiene el formulario y listado de calzado. La dirección anterior `/mis-entrenamientos` redirige a `/`.
 
-Las páginas se sirven en `/`, `/mis-zapatillas` y `/mis-entrenamientos`. Las rutas `/zapatillas` y `/entrenamientos` siguen siendo los recursos JSON de la API. Cada sección carga `app.js`, que registra los eventos de los elementos presentes en esa página. Entrenamientos consulta las zapatillas activas para completar su selector; zapatillas carga solamente su listado.
+## Archivos principales
 
-## Requisitos y configuración
+| Archivo | Responsabilidad |
+| --- | --- |
+| `main.go` | Conexión a la base, rutas y arranque. |
+| `handlers_entrenamientos.go` | Vista, alta y borrado de entrenamientos. |
+| `handlers_zapatillas.go` | Vista, alta y baja de zapatillas. |
+| `handlers.go` | Errores, lectura del ID de los formularios y transacciones ya utilizadas en TP4. |
+| `views/layout.templ` | HTML base, navegación, CSS y pie. |
+| `views/entity_form.templ` | Los dos formularios. |
+| `views/entity_list.templ` | Listado de zapatillas y tabla de entrenamientos. |
+| `views/index.templ` | Composición de las dos páginas. |
+| `static/styles.css` | Diseño de las pantallas. |
+| `logic/running.go` | Validaciones, ritmo en min/km y calorías. |
+| `db/schema`, `db/queries`, `db/sqlc` | Esquema, consultas y código generado por sqlc. |
 
-Go **1.26.6** (versión de `go.mod`), sqlc, Docker con Compose, Bash, curl y, para los atajos, make. Los comandos se ejecutan desde `ProgWeb`; en Windows puede usarse Git Bash con Docker Desktop iniciado.
+`templ generate` crea los archivos `views/*_templ.go`, que se incluyen como código generado. Se regeneran antes de compilar: los archivos que se editan son los `.templ`. Las vistas anteriores de `templates/` se conservan como antecedente; las vistas activas están en `views/`. La entrega con HTML y JavaScript del TP4 está en la rama `tp4`.
 
-Si todavía no existe `.env`, copiar la plantilla:
+## Preparación
+
+Se necesitan Go **1.26.6**, sqlc, Docker con Compose, Bash y curl. Make es opcional. Instalar el generador de la misma versión que figura en `go.mod`:
 
 ```bash
-cp .env.example .env
+go install github.com/a-h/templ/cmd/templ@v0.3.1100
 ```
 
-Configurar en `.env` el usuario, contraseña, base y puerto de PostgreSQL. `DATABASE_URL` debe representar esos mismos datos. La plantilla contiene valores locales de ejemplo; `.env` queda excluido de Git. Make exporta la configuración al proceso Go y Compose la utiliza para PostgreSQL.
+Crear `.env` si todavía no existe:
 
-## Ejecutar la aplicación
+```bash
+test -f .env || cp .env.example .env
+```
+
+La plantilla contiene valores locales de ejemplo. `DATABASE_URL` debe coincidir con el usuario, contraseña, base y puerto configurados para PostgreSQL. `.env` queda excluido de Git.
+
+## Ejecutar
+
+Con Docker iniciado, desde la carpeta del proyecto:
 
 ```bash
 make run
 ```
 
-Este comando genera sqlc, compila todos los archivos Go del paquete, inicia PostgreSQL y arranca el servidor. Abrir **http://localhost:8080/** y elegir **Zapatillas** o **Entrenamientos**. También se puede entrar directamente a **http://localhost:8080/mis-zapatillas** o **http://localhost:8080/mis-entrenamientos**. Ctrl+C detiene los servicios y conserva el volumen con los datos.
+Make genera sqlc y templ, compila el paquete completo e inicia PostgreSQL y el servidor. Abrir **http://localhost:8080/**. Ctrl+C detiene los servicios conservando los datos.
 
-Alternativa en Git Bash si no se dispone de make:
+Alternativa sin make, desde Git Bash en Windows:
 
 ```bash
 set -a
 . ./.env
 set +a
 sqlc generate
-docker compose up -d
-# Esperar a que PostgreSQL acepte conexiones antes del último comando.
-docker compose exec database pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+templ generate
+docker compose up -d --wait
 go run .
 ```
 
-Al finalizar esa alternativa, detener Go con Ctrl+C y ejecutar `docker compose down` para detener la base conservando los datos.
+En esa alternativa, Ctrl+C detiene Go. Después se puede ejecutar `docker compose down` para detener PostgreSQL conservando su volumen.
 
-## Comprobar el TP4 desde el navegador
+## Comprobar el TP5
 
-1. Entrar a **Zapatillas** desde el inicio y agregar un par con kilómetros iniciales. Debe aparecer en su listado.
-2. Navegar a **Entrenamientos**: el par debe aparecer en el selector. Registrar una salida y comprobar el historial, el ritmo en **min/km** y las calorías.
-3. Volver a **Zapatillas** para comprobar el kilometraje actualizado. Eliminar la salida desde **Entrenamientos** y comprobar que se descuenta su distancia del par utilizado.
-4. Eliminar la zapatilla desde su página. Debe salir del listado activo y del selector al abrir **Entrenamientos**. Si tiene salidas, éstas conservan la referencia al par retirado.
-5. Comprobar la lista vacía, campos obligatorios, distancia positiva y fecha no futura.
-6. En las herramientas de red del navegador, verificar los `GET`, `POST` y `DELETE`; el documento no se recarga al usar los formularios. Los enlaces de navegación sí abren la página de la otra sección.
+1. Abrir Zapatillas y agregar un par. El formulario hace POST y vuelve a su listado mediante una redirección.
+2. Entrar a Entrenamientos: el par ya aparece en el selector incluido en el HTML.
+3. Registrar 10 km en 50 minutos. Deben aparecer 5 min/km, 650 kcal y la salida nueva después de la recarga completa.
+4. Actualizar la página: la salida no se vuelve a crear, porque la última petición es GET.
+5. Eliminar la salida mediante su formulario. Se descuenta su distancia de la zapatilla.
+6. Eliminar una zapatilla la retira del listado activo y conserva las referencias del historial.
 
-El ritmo y las calorías se calculan en Go. El ritmo también se recalcula al leer para mostrar correctamente registros anteriores que lo almacenaban con otra unidad.
+Las validaciones se hacen en Go. Los errores de entrada devuelven 400 y se puede volver al formulario con el botón Atrás del navegador. Los cambios de entrenamiento y kilometraje usan una misma transacción para evitar escrituras parciales.
 
-El kilometraje representa **kilómetros iniciales + distancias de los entrenamientos registrados**. Corregir distancia o zapatilla con la API ajusta los totales; borrar un entrenamiento descuenta su distancia. Cada operación se confirma por completo o se revierte mediante una transacción. Una zapatilla retirada conserva su historial y no admite nuevas salidas.
-
-## Pruebas automatizadas
+## Pruebas
 
 ```bash
-make test-api
+make test
 # Alternativa sin make:
 bash ./test-api.sh
 ```
 
-`test-api.sh` usa exclusivamente el proyecto Docker `progweb-tp4-tests`, con puertos separados (por defecto **55432** para la base y **18080** para HTTP). Genera y compila, ejecuta `go test -p 1 -count=1 -v ./...`, levanta la API y comprueba las peticiones de `requests.bash`. Al terminar detiene su servidor y elimina solamente los contenedores y el volumen de pruebas. La base de desarrollo no se reinicia.
+El script conserva su nombre anterior, pero prueba la aplicación web del TP5. Genera el código, ejecuta las pruebas de Go e inicia una instancia para comprobar formularios y redirecciones con curl. Usa el proyecto Docker `progweb-tp5-tests`, con los puertos de pruebas configurados en `.env`. Al finalizar elimina solamente los contenedores y el volumen de ese proyecto temporal.
 
-Las pruebas cubren CRUD, validaciones, ritmo, archivos de la interfaz, correcciones de kilometraje, cambio de zapatilla, rechazo de pares retirados y reversión completa ante un fallo de escritura. `requests.bash` comprueba los códigos HTTP reales y usa los IDs devueltos por la API.
+Se comprueban HTML con datos reales, separación de páginas, formularios válidos e inválidos, redirecciones, escape del texto ingresado, kilometraje, bajas y reversión ante fallos. `requests.bash` se ejecuta desde ese script contra la instancia temporal.
 
-También puede ejecutarse `bash ./requests.bash` contra un servidor ya iniciado. Crea sus propios registros de ejemplo y los elimina al completar el recorrido. `API_URL` permite elegir otra dirección.
+## Material de la cátedra utilizado
 
-El permiso ejecutable de `test-api.sh` debe conservarse al clonar el repositorio. Si se copia como archivo en Linux, se puede restaurar con `chmod +x test-api.sh`. `.gitattributes` mantiene los finales de línea LF de los scripts.
+Los números son páginas del PDF. Los documentos están en la carpeta superior de este espacio de trabajo.
 
-## Relación con el material de la cátedra
-
-Los números siguientes son **páginas del PDF**, que pueden diferir del número de diapositiva impreso. Los documentos están en la carpeta superior de este espacio de trabajo.
-
-| Implementación | Material local | Ubicación |
+| Punto | Material local | Ubicación |
 | --- | --- | --- |
-| Formularios, listados, fetch GET/POST/DELETE, refresco y delegación | `tp4.pdf` | pp. 2-3, sección Trabajo de Cursada |
-| Selección, creación de nodos, texto y eventos del DOM | `08-view.pdf` | pp. 21, 24, 26-27 |
-| Grid y Flexbox | `08-view.pdf` | pp. 71-81 |
-| JSON a HTML, `textContent`, carga inicial y eventos delegados | `10-view-dynamic.pdf` | pp. 35, 44-45 |
-| Archivos estáticos, separación de handlers y configuración con `os.Getenv` | `09-view-static.pdf` | pp. 22-23, 33, 36-37 |
-| `.env`, variables de Compose y exclusión de credenciales de Git | `03-docker.pdf` | pp. 17 y 20 |
-| Operaciones atómicas con Begin/Commit/Rollback | `12-diseño.pdf` | pp. 50-53 |
-| Permisos del script, `.env.example` y separación de handlers | Devolución del docente del 28 de octubre | Captura proporcionada en el chat |
+| Componentes, consulta con sqlc, formularios PRG y automatización | `tp5.pdf` | p. 3, Trabajo de Cursada |
+| Componentes tipados y renderizado | `09-view-static.pdf` | pp. 15-24 y 33-35 |
+| CSS servido como archivo estático | `09-view-static.pdf` | p. 22 |
+| Conexión y configuración | `09-view-static.pdf` | pp. 36-37 |
+| PostgreSQL con Docker y `.env` | `03-docker.pdf` | pp. 17-20 |
+| Transacciones conservadas del TP4 | `12-diseño.pdf` | pp. 50-53 |
 
-Las reglas de kilometraje y la corrección de min/km son adaptaciones al dominio de running del código existente. Se conservaron las tecnologías del proyecto, sin agregar dependencias.
+Se mantiene el dominio de running y la base PostgreSQL que ya tenía el proyecto. El borrado por formulario conserva una función del TP4; el objetivo central del TP5 es listar y crear mediante renderizado en el servidor.

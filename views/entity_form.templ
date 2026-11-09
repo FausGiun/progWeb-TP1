@@ -1,0 +1,63 @@
+package views
+
+import (
+	"strconv"
+	db "tp1/db/sqlc"
+)
+
+templ ZapatillaForm() {
+	<form id="form-zapatilla" class="card" action="/zapatillas" method="post">
+		<h2>Agregá un par</h2>
+		<p class="hint">Cargá también los kilómetros que ya tenía antes de empezar el registro.</p>
+		<label for="marca-modelo">Marca y modelo</label>
+		<input id="marca-modelo" name="marca_modelo" type="text" maxlength="255" placeholder="Ej. Asics Novablast 3" required/>
+		<label for="kms-iniciales">Kilómetros iniciales</label>
+		<input id="kms-iniciales" name="kms_acumulados" type="number" min="0" step="0.01" value="0" required/>
+		<button type="submit">Guardar zapatilla <span aria-hidden="true">+</span></button>
+	</form>
+}
+
+templ EntrenamientoForm(zapatillas []db.Zapatilla, fechaHoy string) {
+	<form id="form-entrenamiento" class="card" action="/entrenamientos" method="post">
+		<h2>Registrá una salida</h2>
+		<div class="field-row">
+			<div>
+				<label for="fecha">Fecha</label>
+				<input id="fecha" name="fecha" type="date" value={ fechaHoy } max={ fechaHoy } required/>
+			</div>
+			<div>
+				<label for="tipo">Tipo de sesión</label>
+				<select id="tipo" name="tipo" required><option value="Fondo">Fondo</option><option value="Pasadas">Pasadas</option></select>
+			</div>
+		</div>
+		<div class="field-row">
+			<div>
+				<label for="distancia">Distancia (km)</label>
+				<input id="distancia" name="distancia_km" type="number" min="0.01" step="0.01" placeholder="5" required/>
+			</div>
+			<div>
+				<label for="tiempo">Tiempo (min)</label>
+				<input id="tiempo" name="tiempo_min" type="number" min="1" max="2147483647" step="1" placeholder="30" required/>
+			</div>
+		</div>
+		<label for="zapatilla">Zapatillas utilizadas</label>
+		<select id="zapatilla" name="zapatilla_id" aria-describedby="ayuda-zapatilla" required disabled?={ len(zapatillas) == 0 }>
+			<option value="">Seleccioná un par</option>
+			for _, zapatilla := range zapatillas {
+				<option value={ strconv.Itoa(int(zapatilla.ID)) }>{ zapatilla.MarcaModelo }</option>
+			}
+		</select>
+		<p id="ayuda-zapatilla" class="hint">
+			if len(zapatillas) == 0 {
+				Agregá al menos un par activo para registrar una salida.
+			} else {
+				Seleccioná el par que usaste en esta salida.
+			}
+		</p>
+		<a class="manage-link" href="/mis-zapatillas">Administrar zapatillas</a>
+		<label for="lugar">Lugar <span class="optional">(opcional)</span></label>
+		<input id="lugar" name="lugar" type="text" maxlength="100" placeholder="Ej. Parque Independencia"/>
+		<p class="calculation-note">El ritmo (min/km) y las calorías se calculan al guardar.</p>
+		<button id="guardar-entrenamiento" type="submit" disabled?={ len(zapatillas) == 0 }>Guardar entrenamiento <span aria-hidden="true">+</span></button>
+	</form>
+}

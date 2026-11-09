@@ -1,0 +1,58 @@
+package views
+
+import (
+	"strconv"
+	db "tp1/db/sqlc"
+)
+
+templ IndexPage(entrenamientos []db.Entrenamiento, zapatillas []db.Zapatilla, fechaHoy string) {
+	@Layout("Entrenamientos", entrenamientosContent(entrenamientos, zapatillas, fechaHoy))
+}
+
+templ entrenamientosContent(entrenamientos []db.Entrenamiento, zapatillas []db.Zapatilla, fechaHoy string) {
+	<div class="intro">
+		<div class="page-heading">
+			<div><p class="eyebrow">TUS SALIDAS</p><h1 id="titulo-entrenamientos">Entrenamientos</h1></div>
+			<span class="badge">
+				if len(entrenamientos) == 1 {
+					1 salida registrada
+				} else {
+					{ strconv.Itoa(len(entrenamientos)) + " salidas registradas" }
+				}
+			</span>
+		</div>
+		<p>Registrá tus salidas y consultá la distancia, el ritmo y el calzado de cada entrenamiento.</p>
+	</div>
+	<section aria-labelledby="titulo-entrenamientos">
+		<div class="section-grid training-grid">
+			@EntrenamientoForm(zapatillas, fechaHoy)
+			@EntrenamientosList(entrenamientos, zapatillas)
+		</div>
+	</section>
+}
+
+templ ZapatillasPage(zapatillas []db.Zapatilla) {
+	@Layout("Zapatillas", zapatillasContent(zapatillas))
+}
+
+templ zapatillasContent(zapatillas []db.Zapatilla) {
+	<div class="intro">
+		<div class="page-heading">
+			<div><p class="eyebrow">TU EQUIPO</p><h1 id="titulo-zapatillas">Zapatillas</h1></div>
+			<span class="badge">
+				if len(zapatillas) == 1 {
+					1 par activo
+				} else {
+					{ strconv.Itoa(len(zapatillas)) + " pares activos" }
+				}
+			</span>
+		</div>
+		<p>Administrá tu calzado y seguí los kilómetros acumulados de cada par.</p>
+	</div>
+	<section aria-labelledby="titulo-zapatillas">
+		<div class="section-grid">
+			@ZapatillaForm()
+			@ZapatillasList(zapatillas)
+		</div>
+	</section>
+}
