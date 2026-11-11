@@ -1,77 +1,57 @@
-# Running Tracker - Vistas Dinámicas con Templ y SQLc (TP5)
+# Running Tracker - Renderizado del Lado del Servidor (TP5)
 
-Aplicación web desarrollada en **Go** para el registro de entrenamientos de running y control del desgaste de calzado deportivo.
+Aplicación web desarrollada en **Go** para el registro y seguimiento de entrenamientos de running y control del kilometraje del calzado deportivo.
 
-En esta etapa (**TP5**), la arquitectura implementa **Server-Side Rendering (SSR)** integrando la capa de presentación directamente en el servidor Go mediante **Templ** (componentes HTML tipados y compilados) y **SQLc** para la persistencia en PostgreSQL. El manejo de formularios implementa el patrón clásico **Post/Redirect/Get (PRG)**.
+En esta etapa (TP5), se reemplaza la interfaz con JavaScript y la API JSON del TP4 por páginas renderizadas en el servidor mediante **templ**, manteniendo **PostgreSQL** y el acceso a datos con **sqlc**. Los formularios utilizan el patrón **Post/Redirect/Get (PRG)**: envían los datos mediante POST y, después de guardarlos, el servidor redirige al listado actualizado.
 
 ## Arquitectura del Proyecto
 
-El proyecto se organiza en capas bien definidas siguiendo el modelo de 3 capas (Presentación, Lógica de Negocio y Acceso a Datos):
+El proyecto mantiene la separación de responsabilidades en tres capas:
 
-- **`views/` (Capa de Presentación - SSR con Templ):**
-  - `layout.templ`: Estructura base del documento HTML (`<!DOCTYPE html>`, `<head>`, `<body>`) estilizada con una hoja de estilo propia (`/static/styles.css`).
-  - `index.templ`: Página principal (`IndexPage`) que compone el layout junto con los formularios y las tablas de datos.
-  - `entity_form.templ`: Componentes de formularios HTML clásicos (`POST /zapatillas` y `POST /entrenamientos`).
-  - `entity_list.templ`: Componentes que reciben slices tipados de `db.Zapatilla` y `db.Entrenamiento` y renderizan las tablas de registros con acciones de eliminación.
-- **`main.go` y `handlers*.go` (Controladores HTTP):** Reciben las peticiones del navegador, consultan la base de datos con `sqlc`, validan las reglas de negocio, renderizan los componentes de `templ` en `GET /` y aplican redirecciones `303 See Other` tras procesar formularios `POST` (Patrón PRG).
-- **`logic/` (Capa de Lógica de Negocio):** Funciones puras en Go (`ValidateZapatilla`, `ValidateEntrenamiento`, `CalcularRitmo`, `CalcularCalorias`) sin dependencias externas.
-- **`db/` (Capa de Acceso a Datos):** Esquema SQL (`db/schema/schema.sql`), consultas (`db/queries/queries.sql`) y código Go seguro generado por `sqlc`.
+- **`views/` y controladores HTTP (Capa de Presentación):** Componentes templ para el layout, formularios y listados. `main.go` configura las rutas y el servidor; los archivos `handlers*.go` procesan los formularios y renderizan las páginas.
+- **`logic/` (Capa de Lógica de Negocio / Dominio):** Validaciones de zapatillas y entrenamientos, cálculo de ritmo y calorías.
+- **`db/` (Capa de Datos):** Esquema relacional (`db/schema/schema.sql`), consultas parametrizadas (`db/queries/queries.sql`) y código Go generado mediante sqlc.
 
 ## Requisitos Previos
 
-- **Go** (1.22+)
-- **Docker** y **Docker Compose**
+- **Go** (1.26.6 o superior).
+- **Docker** y **Docker Compose**.
 - **sqlc**: `go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest`
-- **templ**: `go install github.com/a-h/templ/cmd/templ@latest`
-- **make**
+- **templ**: `go install github.com/a-h/templ/cmd/templ@v0.3.1100`
+- **make**, **Bash** y **curl**.
 
-## Ejecución y Flujo de Trabajo (Makefile)
+Los comandos se ejecutan desde la raíz del proyecto en Bash. En Windows se puede utilizar Git Bash con Docker Desktop iniciado. Las herramientas deben estar disponibles en el PATH.
 
-El proyecto incluye un `Makefile` que automatiza la generación de código de `sqlc` y `templ`, la compilación del servidor y la gestión del contenedor de PostgreSQL en Docker.
+## Configuración
 
-### 1. Ejecutar el Servidor
+Antes de la primera ejecución, si todavía no existe `.env`, copiar la configuración de ejemplo:
 
-Levanta el contenedor de PostgreSQL, espera a que acepte conexiones, ejecuta `sqlc generate` y `templ generate`, compila el binario e inicia el servidor en `http://localhost:8080`:
+```bash
+cp .env.example .env
+```
+
+El usuario, contraseña, base y puerto de PostgreSQL deben coincidir con los indicados en `DATABASE_URL`. La plantilla incluye valores para uso local. El archivo `.env` queda excluido de Git.
+
+## Cómo Ejecutar el Proyecto
+
+Con Docker iniciado, ejecutar:
 
 ```bash
 make run
 ```
 
-Una vez iniciado, abrir en el navegador:
-👉 **`http://localhost:8080`**
+El comando genera el código de sqlc y templ, compila la aplicación, inicia PostgreSQL y ejecuta el servidor.
 
-*(Al presionar `Ctrl + C`, el servidor se detiene y apaga el contenedor de Docker automáticamente).*
+Abrir http://localhost:8080/. Primero se debe registrar un par desde la sección **Zapatillas** y luego se pueden cargar entrenamientos.
 
-### 2. Ejecutar Pruebas Automatizadas
+Al presionar **Ctrl+C**, se detienen el servidor y los contenedores, conservando los datos.
 
-Inicia una base de datos limpia en Docker, ejecuta las pruebas unitarias de lógica de negocio (`logic/`), las pruebas de integración de base de datos (`db/sqlc/`) y las pruebas de renderizado SSR y flujo PRG (`main_test.go`), eliminando los contenedores al terminar:
+## Cómo Probar el Proyecto
+
+Para generar el código y ejecutar las pruebas de lógica, base de datos, renderizado HTML y formularios:
 
 ```bash
 make test
 ```
 
-### 3. Regenerar Código Manualmente (SQLc + Templ)
-
-Si se modifican archivos `.sql` o `.templ`, se puede regenerar el código Go ejecutando:
-
-```bash
-make generate
-```
-
-### 4. Limpiar el Entorno
-
-Detiene y elimina los contenedores y volúmenes de Docker, y borra los binarios temporales:
-
-```bash
-make clean
-```
-
-## Rutas Principales del Servidor SSR
-
-| Método | Ruta | Acción | Respuesta |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/` | Obtiene zapatillas y entrenamientos de la BD y renderiza `views.IndexPage` | `200 OK` (`text/html`) |
-| `POST` | `/zapatillas` | Parsea el formulario, valida y guarda una nueva zapatilla | `303 See Other` (Redirect a `/mis-zapatillas`) |
-| `POST` | `/zapatillas/eliminar` | Elimina una zapatilla desde el formulario de la tabla | `303 See Other` (Redirect a `/mis-zapatillas`) |
-| `POST` | `/entrenamientos` | Parsea el formulario, calcula ritmo/calorías, guarda el entrenamiento y suma Kms | `303 See Other` (Redirect a `/`) |
-| `POST` | `/entrenamientos/eliminar` | Elimina un entrenamiento desde el formulario de la tabla | `303 See Other` (Redirect a `/`) |
+Las pruebas utilizan una base de datos separada de la aplicación. Al finalizar, se eliminan los contenedores y el volumen de pruebas, conservando los datos de desarrollo.
