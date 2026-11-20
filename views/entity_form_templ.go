@@ -11,7 +11,8 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"strconv"
-	db "tp1/db/sqlc"
+
+	"tp1/logic"
 )
 
 func ZapatillaForm() templ.Component {
@@ -31,7 +32,7 @@ func ZapatillaForm() templ.Component {
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<form id=\"form-zapatilla\" class=\"card\" action=\"/zapatillas\" method=\"post\"><h2>Agregá un par</h2><p class=\"hint\">Cargá también los kilómetros que ya tenía antes de empezar el registro.</p><label for=\"marca-modelo\">Marca y modelo</label> <input id=\"marca-modelo\" name=\"marca_modelo\" type=\"text\" maxlength=\"255\" placeholder=\"Ej. Asics Novablast 3\" required> <label for=\"kms-iniciales\">Kilómetros iniciales</label> <input id=\"kms-iniciales\" name=\"kms_acumulados\" type=\"number\" min=\"0\" step=\"0.01\" value=\"0\" required> <button type=\"submit\">Guardar zapatilla <span aria-hidden=\"true\">+</span></button></form>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<form id=\"form-zapatilla\" class=\"card\" action=\"/zapatillas\" method=\"post\" hx-post=\"/zapatillas\" hx-target=\"#panel-zapatillas\" hx-swap=\"outerHTML\"><h2>Agregá un par</h2><p class=\"hint\">Cargá también los kilómetros que ya tenía antes de empezar el registro.</p><label for=\"marca-modelo\">Marca y modelo</label> <input id=\"marca-modelo\" name=\"marca_modelo\" type=\"text\" maxlength=\"255\" placeholder=\"Ej. Asics Novablast 3\" required> <label for=\"kms-iniciales\">Kilómetros iniciales</label> <input id=\"kms-iniciales\" name=\"kms_acumulados\" type=\"number\" min=\"0\" step=\"0.01\" value=\"0\" required> <button type=\"submit\">Guardar zapatilla <span aria-hidden=\"true\">+</span></button></form>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -39,7 +40,7 @@ func ZapatillaForm() templ.Component {
 	})
 }
 
-func EntrenamientoForm(zapatillas []db.Zapatilla, fechaHoy string) templ.Component {
+func EntrenamientoForm(zapatillas []logic.Zapatilla, fechaHoy string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -56,14 +57,14 @@ func EntrenamientoForm(zapatillas []db.Zapatilla, fechaHoy string) templ.Compone
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<form id=\"form-entrenamiento\" class=\"card\" action=\"/entrenamientos\" method=\"post\"><h2>Registrá una salida</h2><div class=\"field-row\"><div><label for=\"fecha\">Fecha</label> <input id=\"fecha\" name=\"fecha\" type=\"date\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<form id=\"form-entrenamiento\" class=\"card\" action=\"/entrenamientos\" method=\"post\" hx-post=\"/entrenamientos\" hx-target=\"#panel-entrenamientos\" hx-swap=\"outerHTML\"><h2>Registrá una salida</h2><div class=\"field-row\"><div><label for=\"fecha\">Fecha</label> <input id=\"fecha\" name=\"fecha\" type=\"date\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templruntime.NewAttributeExpression(fechaHoy).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/entity_form.templ`, Line: 26, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/entity_form.templ`, Line: 27, Col: 63}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
 		if templ_7745c5c3_Err != nil {
@@ -76,7 +77,7 @@ func EntrenamientoForm(zapatillas []db.Zapatilla, fechaHoy string) templ.Compone
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templruntime.NewAttributeExpression(fechaHoy).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/entity_form.templ`, Line: 26, Col: 80}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/entity_form.templ`, Line: 27, Col: 80}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 		if templ_7745c5c3_Err != nil {
@@ -104,7 +105,7 @@ func EntrenamientoForm(zapatillas []db.Zapatilla, fechaHoy string) templ.Compone
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templruntime.NewAttributeExpression(strconv.Itoa(int(zapatilla.ID))).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/entity_form.templ`, Line: 47, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/entity_form.templ`, Line: 48, Col: 51}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var5)
 			if templ_7745c5c3_Err != nil {
@@ -117,7 +118,7 @@ func EntrenamientoForm(zapatillas []db.Zapatilla, fechaHoy string) templ.Compone
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(zapatilla.MarcaModelo)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/entity_form.templ`, Line: 47, Col: 77}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/entity_form.templ`, Line: 48, Col: 77}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {

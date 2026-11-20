@@ -45,8 +45,7 @@ func TestZapatillaCRUD(t *testing.T) {
 	queries := New(testDatabase)
 	ctx := context.Background()
 
-	// 1. Crear (Genera la variable 'created')
-	created, err := queries.CreateZapatilla(ctx, CreateZapatillaParams{
+	zapatilla, err := queries.CreateZapatilla(ctx, CreateZapatillaParams{
 		MarcaModelo:   "Nike Pegasus 40",
 		KmsAcumulados: 0,
 		Estado:        true,
@@ -55,26 +54,23 @@ func TestZapatillaCRUD(t *testing.T) {
 		t.Fatalf("CreateZapatilla() error = %v", err)
 	}
 
-	// 2. Leer y verificar longitud
-	listed, err := queries.ListZapatillas(ctx)
+	zapatillas, err := queries.ListZapatillas(ctx)
 	if err != nil {
 		t.Fatalf("ListZapatillas() falló con error: %v", err)
 	}
-	if len(listed) == 0 {
+	if len(zapatillas) == 0 {
 		t.Fatalf("ListZapatillas() devolvió 0 elementos, se esperaba al menos 1")
 	}
 
-	// 3. Actualizar (usa 'created.ID' para resolver el error de variable no usada)
 	err = queries.UpdateZapatillaKms(ctx, UpdateZapatillaKmsParams{
-		ID:            created.ID,
+		ID:            zapatilla.ID,
 		KmsAcumulados: 12.5,
 	})
 	if err != nil {
 		t.Fatalf("UpdateZapatillaKms() error = %v", err)
 	}
 
-	// 4. Borrar (usa 'created.ID')
-	err = queries.DeleteZapatilla(ctx, created.ID)
+	err = queries.DeleteZapatilla(ctx, zapatilla.ID)
 	if err != nil {
 		t.Fatalf("DeleteZapatilla() error = %v", err)
 	}
@@ -85,18 +81,17 @@ func TestEntrenamientoCRUD(t *testing.T) {
 	queries := New(testDatabase)
 	ctx := context.Background()
 
-	shoe, _ := queries.CreateZapatilla(ctx, CreateZapatillaParams{
+	zapatilla, _ := queries.CreateZapatilla(ctx, CreateZapatillaParams{
 		MarcaModelo: "Asics Novablast 3",
 		Estado:      true,
 	})
 
-	// Test de Creación de Entrenamiento (con Lugar)
-	created, err := queries.CreateEntrenamiento(ctx, CreateEntrenamientoParams{
+	entrenamiento, err := queries.CreateEntrenamiento(ctx, CreateEntrenamientoParams{
 		Fecha:       time.Now(),
 		DistanciaKm: 10.0,
 		TiempoMin:   50,
 		Tipo:        "Fondo",
-		ZapatillaID: shoe.ID,
+		ZapatillaID: zapatilla.ID,
 		Ritmo:       5.0,
 		Calorias:    600,
 		Lugar:       sql.NullString{String: "Parque", Valid: true},
@@ -105,19 +100,16 @@ func TestEntrenamientoCRUD(t *testing.T) {
 		t.Fatalf("CreateEntrenamiento() error = %v", err)
 	}
 
-	// Test de Lectura
-	found, err := queries.GetEntrenamiento(ctx, created.ID)
-	if err != nil || found.ID != created.ID {
+	guardado, err := queries.GetEntrenamiento(ctx, entrenamiento.ID)
+	if err != nil || guardado.ID != entrenamiento.ID {
 		t.Fatalf("GetEntrenamiento() falló al recuperar el registro")
 	}
 
-	// Test de Eliminación
-	if err := queries.DeleteEntrenamiento(ctx, created.ID); err != nil {
+	if err := queries.DeleteEntrenamiento(ctx, entrenamiento.ID); err != nil {
 		t.Fatalf("DeleteEntrenamiento() error = %v", err)
 	}
 
-	//Para verificar que elimino
-	_, err = queries.GetEntrenamiento(ctx, created.ID)
+	_, err = queries.GetEntrenamiento(ctx, entrenamiento.ID)
 	if err == nil {
 		t.Fatal("GetEntrenamiento() esperaba un error después de eliminar, pero devolvió el registro")
 	}

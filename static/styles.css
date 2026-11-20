@@ -45,7 +45,6 @@ section { margin: 20px 0 44px; scroll-margin-top: 20px; }
 .section-heading .eyebrow { margin-bottom: 3px; }
 h2 { font-size: 25px; letter-spacing: -.7px; line-height: 1.2; margin: 0; }
 h3 { font-size: 17px; letter-spacing: -.3px; margin: 0 0 8px; }
-.badge { background: #e6eef4; color: var(--blue); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 650; white-space: nowrap; }
 .section-grid { display: grid; grid-template-columns: 340px minmax(0, 1fr); align-items: start; gap: 22px; }
 .card { min-width: 0; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 26px; box-shadow: 0 4px 14px #23364704; }
 .hint, .footnote { color: var(--muted); font-size: 13px; margin: 0 0 17px; }
@@ -76,6 +75,8 @@ button:disabled, select:disabled { cursor: not-allowed; opacity: .55; }
 .delete-button:hover { background: #fff0ee; border-color: #d8b0a9; }
 .delete-form { margin: 0; flex-shrink: 0; }
 .empty-state { padding: 30px 16px; text-align: center; font-size: 14px; color: var(--muted); background: #f8fafb; border-radius: 8px; }
+.shoe-list > .empty-state:not(:only-child),
+.empty-row:not(:only-child) { display: none; }
 .table-scroll { overflow-x: auto; margin-top: 22px; }
 table { border-collapse: collapse; width: 100%; font-size: 12px; text-align: left; }
 th { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); padding: 12px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }

@@ -2,11 +2,12 @@ package views
 
 import (
 	"strconv"
-	db "tp1/db/sqlc"
+
+	"tp1/logic"
 )
 
 templ ZapatillaForm() {
-	<form id="form-zapatilla" class="card" action="/zapatillas" method="post">
+	<form id="form-zapatilla" class="card" action="/zapatillas" method="post" hx-post="/zapatillas" hx-target="#panel-zapatillas" hx-swap="outerHTML">
 		<h2>Agregá un par</h2>
 		<p class="hint">Cargá también los kilómetros que ya tenía antes de empezar el registro.</p>
 		<label for="marca-modelo">Marca y modelo</label>
@@ -17,8 +18,8 @@ templ ZapatillaForm() {
 	</form>
 }
 
-templ EntrenamientoForm(zapatillas []db.Zapatilla, fechaHoy string) {
-	<form id="form-entrenamiento" class="card" action="/entrenamientos" method="post">
+templ EntrenamientoForm(zapatillas []logic.Zapatilla, fechaHoy string) {
+	<form id="form-entrenamiento" class="card" action="/entrenamientos" method="post" hx-post="/entrenamientos" hx-target="#panel-entrenamientos" hx-swap="outerHTML">
 		<h2>Registrá una salida</h2>
 		<div class="field-row">
 			<div>

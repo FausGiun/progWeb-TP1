@@ -10,8 +10,7 @@ set -a
 . ./.env
 set +a
 
-# Proyecto y puertos independientes: no se reinicia la base de desarrollo.
-TEST_PROJECT="progweb-tp5-tests"
+TEST_PROJECT="progweb-tp6-tests"
 export DB_PORT="${TEST_DB_PORT:-55432}"
 export TEST_DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:${DB_PORT}/${POSTGRES_DB}?sslmode=disable"
 export DATABASE_URL="$TEST_DATABASE_URL"
@@ -28,7 +27,6 @@ cleanup() {
         kill "$API_PID" || true
         wait "$API_PID" 2>/dev/null || true
     fi
-    # Solo se elimina el volumen del proyecto de pruebas creado por este script.
     if ! docker compose -p "$TEST_PROJECT" down -v; then resultado=1; fi
     rm -f "$APP_BIN"
     exit "$resultado"

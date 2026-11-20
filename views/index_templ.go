@@ -9,12 +9,9 @@ package views
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import (
-	"strconv"
-	db "tp1/db/sqlc"
-)
+import "tp1/logic"
 
-func IndexPage(entrenamientos []db.Entrenamiento, zapatillas []db.Zapatilla, fechaHoy string) templ.Component {
+func IndexPage(entrenamientos []logic.Entrenamiento, zapatillas []logic.Zapatilla, fechaHoy string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -39,7 +36,7 @@ func IndexPage(entrenamientos []db.Entrenamiento, zapatillas []db.Zapatilla, fec
 	})
 }
 
-func entrenamientosContent(entrenamientos []db.Entrenamiento, zapatillas []db.Zapatilla, fechaHoy string) templ.Component {
+func entrenamientosContent(entrenamientos []logic.Entrenamiento, zapatillas []logic.Zapatilla, fechaHoy string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -56,27 +53,7 @@ func entrenamientosContent(entrenamientos []db.Entrenamiento, zapatillas []db.Za
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"intro\"><div class=\"page-heading\"><div><p class=\"eyebrow\">TUS SALIDAS</p><h1 id=\"titulo-entrenamientos\">Entrenamientos</h1></div><span class=\"badge\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if len(entrenamientos) == 1 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "1 salida registrada")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		} else {
-			var templ_7745c5c3_Var3 string
-			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(len(entrenamientos)) + " salidas registradas")
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/index.templ`, Line: 20, Col: 65}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</span></div><p>Registrá tus salidas y consultá la distancia, el ritmo y el calzado de cada entrenamiento.</p></div><section aria-labelledby=\"titulo-entrenamientos\"><div class=\"section-grid training-grid\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"intro\"><div class=\"page-heading\"><div><p class=\"eyebrow\">TUS SALIDAS</p><h1 id=\"titulo-entrenamientos\">Entrenamientos</h1></div></div><p>Registrá tus salidas y consultá la distancia, el ritmo y el calzado de cada entrenamiento.</p></div><section aria-labelledby=\"titulo-entrenamientos\"><div class=\"section-grid training-grid\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -88,7 +65,7 @@ func entrenamientosContent(entrenamientos []db.Entrenamiento, zapatillas []db.Za
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -96,7 +73,7 @@ func entrenamientosContent(entrenamientos []db.Entrenamiento, zapatillas []db.Za
 	})
 }
 
-func ZapatillasPage(zapatillas []db.Zapatilla) templ.Component {
+func ZapatillasPage(zapatillas []logic.Zapatilla) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -121,7 +98,7 @@ func ZapatillasPage(zapatillas []db.Zapatilla) templ.Component {
 	})
 }
 
-func zapatillasContent(zapatillas []db.Zapatilla) templ.Component {
+func zapatillasContent(zapatillas []logic.Zapatilla) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -138,27 +115,7 @@ func zapatillasContent(zapatillas []db.Zapatilla) templ.Component {
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"intro\"><div class=\"page-heading\"><div><p class=\"eyebrow\">TU EQUIPO</p><h1 id=\"titulo-zapatillas\">Zapatillas</h1></div><span class=\"badge\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if len(zapatillas) == 1 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "1 par activo")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		} else {
-			var templ_7745c5c3_Var6 string
-			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(len(zapatillas)) + " pares activos")
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/index.templ`, Line: 46, Col: 55}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</span></div><p>Administrá tu calzado y seguí los kilómetros acumulados de cada par.</p></div><section aria-labelledby=\"titulo-zapatillas\"><div class=\"section-grid\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"intro\"><div class=\"page-heading\"><div><p class=\"eyebrow\">TU EQUIPO</p><h1 id=\"titulo-zapatillas\">Zapatillas</h1></div></div><p>Administrá tu calzado y seguí los kilómetros acumulados de cada par.</p></div><section aria-labelledby=\"titulo-zapatillas\"><div class=\"section-grid\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -170,7 +127,7 @@ func zapatillasContent(zapatillas []db.Zapatilla) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

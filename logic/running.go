@@ -43,7 +43,6 @@ func CalcularRitmo(distanciaKm float64, tiempoMin int) float64 {
 	if distanciaKm <= 0 || tiempoMin <= 0 {
 		return 0
 	}
-	// Ritmo expresado en minutos por kilómetro, como en el historial.
 	return float64(tiempoMin) / distanciaKm
 }
 

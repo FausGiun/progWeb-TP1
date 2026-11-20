@@ -3,10 +3,11 @@ package views
 import (
 	"fmt"
 	"strconv"
-	db "tp1/db/sqlc"
+
+	"tp1/logic"
 )
 
-func nombreZapatilla(id int32, zapatillas []db.Zapatilla) string {
+func nombreZapatilla(id int32, zapatillas []logic.Zapatilla) string {
 	for _, zapatilla := range zapatillas {
 		if zapatilla.ID == id {
 			return zapatilla.MarcaModelo
@@ -15,14 +16,12 @@ func nombreZapatilla(id int32, zapatillas []db.Zapatilla) string {
 	return fmt.Sprintf("Par #%d (retirado)", id)
 }
 
-templ ZapatillasList(zapatillas []db.Zapatilla) {
-	<div class="card list-card">
+templ ZapatillasList(zapatillas []logic.Zapatilla) {
+	<div id="panel-zapatillas" class="card list-card">
 		<h2>Tu calzado activo</h2>
 		<p class="hint">El kilometraje se actualiza con los entrenamientos registrados.</p>
 		<ul id="lista-zapatillas" class="shoe-list" aria-label="Zapatillas activas">
-			if len(zapatillas) == 0 {
-				<li class="empty-state">No tenes zapatillas activas. Agregá un par.</li>
-			}
+			<li class="empty-state">No tenes zapatillas activas. Agregá un par.</li>
 			for _, zapatilla := range zapatillas {
 				<li class="shoe-item">
 					<div>
@@ -31,7 +30,9 @@ templ ZapatillasList(zapatillas []db.Zapatilla) {
 					</div>
 					<form class="delete-form" action="/zapatillas/eliminar" method="post">
 						<input type="hidden" name="id" value={ strconv.Itoa(int(zapatilla.ID)) }/>
-						<button class="delete-button" type="submit" aria-label={ "Eliminar " + zapatilla.MarcaModelo }>Eliminar</button>
+						<button class="delete-button" type="submit" aria-label={ "Eliminar " + zapatilla.MarcaModelo }
+							hx-delete={ fmt.Sprintf("/zapatillas/%d", zapatilla.ID) }
+							hx-target="closest li" hx-swap="outerHTML" hx-confirm="¿Retirar este par?">Eliminar</button>
 					</form>
 				</li>
 			}
@@ -40,8 +41,8 @@ templ ZapatillasList(zapatillas []db.Zapatilla) {
 	</div>
 }
 
-templ EntrenamientosList(entrenamientos []db.Entrenamiento, zapatillas []db.Zapatilla) {
-	<div class="card list-card history-card">
+templ EntrenamientosList(entrenamientos []logic.Entrenamiento, zapatillas []logic.Zapatilla) {
+	<div id="panel-entrenamientos" class="card list-card history-card">
 		<h2>Historial de entrenamientos</h2>
 		<p class="hint">Tus últimas salidas aparecen primero.</p>
 		<div class="table-scroll" role="region" aria-label="Historial, desplazable horizontalmente" tabindex="0">
@@ -49,9 +50,7 @@ templ EntrenamientosList(entrenamientos []db.Entrenamiento, zapatillas []db.Zapa
 				<caption class="visually-hidden">Entrenamientos registrados</caption>
 				<thead><tr><th scope="col">Fecha / sesión</th><th scope="col">Distancia</th><th scope="col">Tiempo</th><th scope="col">Ritmo</th><th scope="col">Calorías</th><th scope="col">Zapatilla</th><th scope="col">Lugar</th><th scope="col">Acción</th></tr></thead>
 				<tbody id="lista-entrenamientos">
-					if len(entrenamientos) == 0 {
-						<tr><td colspan="8" class="empty-state">Todavía no hay salidas registradas. Sumá la primera.</td></tr>
-					}
+					<tr class="empty-row"><td colspan="8" class="empty-state">Todavía no hay salidas registradas. Sumá la primera.</td></tr>
 					for _, entrenamiento := range entrenamientos {
 						<tr>
 							<td>{ entrenamiento.Fecha.Format("02/01/2006") }<span class="session-type">{ entrenamiento.Tipo }</span></td>
@@ -61,8 +60,8 @@ templ EntrenamientosList(entrenamientos []db.Entrenamiento, zapatillas []db.Zapa
 							<td>{ fmt.Sprintf("%d kcal", entrenamiento.Calorias) }</td>
 							<td>{ nombreZapatilla(entrenamiento.ZapatillaID, zapatillas) }</td>
 							<td>
-								if entrenamiento.Lugar.Valid {
-									{ entrenamiento.Lugar.String }
+								if entrenamiento.Lugar != nil {
+									{ *entrenamiento.Lugar }
 								} else {
 									—
 								}
@@ -70,7 +69,9 @@ templ EntrenamientosList(entrenamientos []db.Entrenamiento, zapatillas []db.Zapa
 							<td>
 								<form class="delete-form" action="/entrenamientos/eliminar" method="post">
 									<input type="hidden" name="id" value={ strconv.Itoa(int(entrenamiento.ID)) }/>
-									<button class="delete-button" type="submit" aria-label={ "Eliminar entrenamiento del " + entrenamiento.Fecha.Format("02/01/2006") }>Eliminar</button>
+									<button class="delete-button" type="submit" aria-label={ "Eliminar entrenamiento del " + entrenamiento.Fecha.Format("02/01/2006") }
+										hx-delete={ fmt.Sprintf("/entrenamientos/%d", entrenamiento.ID) }
+										hx-target="closest tr" hx-swap="outerHTML" hx-confirm="¿Eliminar este entrenamiento?">Eliminar</button>
 								</form>
 							</td>
 						</tr>

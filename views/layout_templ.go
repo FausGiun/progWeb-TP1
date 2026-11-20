@@ -39,7 +39,7 @@ func Layout(title string, content templ.Component) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><link rel=\"stylesheet\" href=\"/static/styles.css\"></head><body><header class=\"app-header\"><a class=\"brand\" href=\"/\" aria-label=\"Runner Log - Tracker, inicio\"><span class=\"brand-mark\">RL</span> Runner Log - Tracker</a><nav aria-label=\"Navegación principal\"><a href=\"/\">Entrenamientos</a> <a href=\"/mis-zapatillas\">Zapatillas</a></nav></header><main>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><link rel=\"stylesheet\" href=\"/static/styles.css\"><script src=\"https://unpkg.com/htmx.org@1.9.10\" defer></script></head><body><header class=\"app-header\"><a class=\"brand\" href=\"/\" aria-label=\"Runner Log - Tracker, inicio\"><span class=\"brand-mark\">RL</span> Runner Log - Tracker</a><nav aria-label=\"Navegación principal\"><a href=\"/\">Entrenamientos</a> <a href=\"/mis-zapatillas\">Zapatillas</a></nav></header><main>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

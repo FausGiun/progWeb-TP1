@@ -6,30 +6,17 @@ import (
 	"net/http"
 	"os"
 
-	db "tp1/db/sqlc"
+	"tp1/application"
+	"tp1/db/postgres"
+	"tp1/web"
 
 	_ "github.com/lib/pq"
 )
 
 func setupRouter(conn *sql.DB) http.Handler {
-	app := &webHandler{conn: conn, queries: db.New(conn)}
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", app.entrenamientosPage)
-	mux.HandleFunc("/mis-zapatillas", app.zapatillasPage)
-	mux.HandleFunc("/zapatillas", app.createZapatilla)
-	mux.HandleFunc("/entrenamientos", app.createEntrenamiento)
-	mux.HandleFunc("/zapatillas/eliminar", app.deleteZapatilla)
-	mux.HandleFunc("/entrenamientos/eliminar", app.deleteEntrenamiento)
-	// El CSS sigue siendo un archivo estático; templ genera las páginas.
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	mux.HandleFunc("/mis-entrenamientos", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			methodNotAllowed(w, "GET")
-			return
-		}
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-	})
-	return loggingMiddleware(mux)
+	repo := postgres.NuevoRepositorio(conn)
+	registro := application.NuevoRegistro(repo)
+	return web.Router(registro)
 }
 
 func main() {

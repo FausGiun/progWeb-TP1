@@ -1,5 +1,3 @@
--- Consultas para Zapatillas
-
 -- name: CreateZapatilla :one
 INSERT INTO zapatillas (marca_modelo, kms_acumulados, estado)
 VALUES ($1, $2, $3)
@@ -37,8 +35,6 @@ WHERE id = $1;
 UPDATE zapatillas
 SET estado = false
 WHERE id = $1;
-
--- CONSULTAS PARA ENTRENAMIENTOS
 
 -- name: CreateEntrenamiento :one
 INSERT INTO entrenamientos (

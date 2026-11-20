@@ -35,4 +35,4 @@ if [[ "$(<"$RESPUESTA")" != *'TP5 prueba HTTP'* ]]; then
     echo "El registro nuevo debe estar en el HTML devuelto por Go." >&2
     exit 1
 fi
-echo "Formularios, redirecciones y HTML del TP5 comprobados."
+echo "Formularios comunes, redirecciones y HTML comprobados."

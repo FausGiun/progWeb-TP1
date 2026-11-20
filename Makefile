@@ -13,7 +13,6 @@ build: generate
 	@mkdir -p tmp
 	@go build -o tmp/$(APP_NAME) .
 
-# Entrega TP5: limpiar, generar, compilar, iniciar, ejecutar y limpiar al salir.
 run-app:
 	@bash ./run-app.sh
 
@@ -23,5 +22,5 @@ test:
 	@bash ./test-app.sh
 
 clean:
-	@docker compose -p progweb-tp5-app down -v --remove-orphans
+	@docker compose -p progweb-tp6-app down -v --remove-orphans
 	@rm -f tmp/runner-log tmp/runner-log.exe
