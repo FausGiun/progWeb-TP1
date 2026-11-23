@@ -37,6 +37,8 @@ Con `.env` presente, ejecutá las pruebas con este comando o con `make test`. Us
 bash ./test-app.sh
 ```
 
+Las pruebas de Go cubren los formularios comunes y las transacciones. `requests.bash` comprueba las altas y bajas de HTMX sobre el servidor en ejecución.
+
 `make generate` regenera el código de sqlc y templ. `make clean` elimina los recursos Docker de la app y su binario temporal.
 
 ## Rutas

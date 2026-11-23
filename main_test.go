@@ -57,8 +57,11 @@ func TestRutas(t *testing.T) {
 	webRequest(t, router, "GET", "/static/styles.css", nil, 200)
 	webRequest(t, router, "GET", "/no-existe", nil, 404)
 	webRequest(t, router, "POST", "/", nil, 405)
-	webRequest(t, router, "GET", "/zapatillas", nil, 405)
-	response := webRequest(t, router, "GET", "/mis-entrenamientos", nil, 303)
+	response := webRequest(t, router, "GET", "/zapatillas", nil, 405)
+	if response.Header().Get("Allow") != "POST" {
+		t.Fatal("El alta de zapatillas solo debe aceptar POST")
+	}
+	response = webRequest(t, router, "GET", "/mis-entrenamientos", nil, 303)
 	if response.Header().Get("Location") != "/" {
 		t.Fatal("La ruta anterior de entrenamientos debe llevar al inicio")
 	}
@@ -207,11 +210,11 @@ func TestEntrenamientoAtomico(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := conn.Exec("ALTER TABLE zapatillas ADD CONSTRAINT tp5_test_maxkms CHECK (kms_acumulados <= 25)"); err != nil {
+	if _, err := conn.Exec("ALTER TABLE zapatillas ADD CONSTRAINT test_limite_kilometraje CHECK (kms_acumulados <= 25)"); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		if _, err := conn.Exec("ALTER TABLE zapatillas DROP CONSTRAINT tp5_test_maxkms"); err != nil {
+		if _, err := conn.Exec("ALTER TABLE zapatillas DROP CONSTRAINT test_limite_kilometraje"); err != nil {
 			t.Error(err)
 		}
 	})

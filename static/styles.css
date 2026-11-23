@@ -26,23 +26,14 @@ button { cursor: pointer; }
 nav { display: flex; gap: 28px; }
 nav a { font-size: 14px; font-weight: 600; text-decoration: none; }
 nav a:hover { text-decoration: underline; }
-nav a[aria-current="page"] { text-decoration: underline; text-underline-offset: 6px; }
 .intro { padding: 48px 0 30px; }
 .eyebrow { font-size: 11px; font-weight: 750; letter-spacing: 1.8px; color: var(--blue); margin: 0 0 9px; }
 h1 { font-size: clamp(32px, 4vw, 46px); letter-spacing: -1.6px; line-height: 1.15; margin: 0 0 14px; }
 .intro > p:last-child { color: var(--muted); max-width: 650px; margin: 0; }
 .page-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-.home-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; margin: 12px 0 56px; }
-.section-link { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; text-decoration: none; color: inherit; }
-.section-link:hover { border-color: var(--blue); }
-.section-link p { color: var(--muted); margin: 0; }
-.section-link .eyebrow { color: var(--blue); }
-.section-link span { color: var(--blue); font-size: 14px; font-weight: 650; margin-top: 8px; }
 .card h2 { font-size: 17px; margin-bottom: 8px; }
 .manage-link { display: inline-block; font-size: 12px; margin-top: 3px; }
 section { margin: 20px 0 44px; scroll-margin-top: 20px; }
-.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
-.section-heading .eyebrow { margin-bottom: 3px; }
 h2 { font-size: 25px; letter-spacing: -.7px; line-height: 1.2; margin: 0; }
 h3 { font-size: 17px; letter-spacing: -.3px; margin: 0 0 8px; }
 .section-grid { display: grid; grid-template-columns: 340px minmax(0, 1fr); align-items: start; gap: 22px; }
@@ -62,10 +53,6 @@ form.card > button[type="submit"] { width: 100%; border: 0; display: flex; justi
 form.card > button[type="submit"] span { font-size: 20px; line-height: 1; font-weight: 400; }
 form.card > button[type="submit"]:hover { background: #16496e; }
 button:disabled, select:disabled { cursor: not-allowed; opacity: .55; }
-.message { font-size: 13px; padding: 12px 14px; border-radius: 7px; margin: 16px 0 0; overflow-wrap: anywhere; }
-.success { color: #216046; background: #eaf6ef; border: 1px solid #cee8d8; }
-.error { color: #973b36; background: #fff0ee; border: 1px solid #f3d5d0; }
-#mensaje-general { margin-bottom: 24px; }
 .shoe-list { padding: 0; margin: 0; list-style: none; }
 .shoe-item { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 17px 0; border-bottom: 1px solid var(--line); }
 .shoe-item:last-child { border-bottom: 0; padding-bottom: 0; }
@@ -99,9 +86,7 @@ td:first-child { white-space: nowrap; }
     nav { gap: 24px; }
     .intro { padding: 32px 0 24px; }
     .section-grid { grid-template-columns: 1fr; }
-    .home-grid { grid-template-columns: 1fr; }
     .page-heading { align-items: flex-start; flex-direction: column; gap: 4px; margin-bottom: 14px; }
-    .section-heading { align-items: flex-end; }
     .app-footer { flex-direction: column; gap: 5px; }
 }
 @media (prefers-reduced-motion: reduce) {

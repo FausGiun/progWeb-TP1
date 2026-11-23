@@ -10,14 +10,6 @@ import (
 )
 
 func (h *webHandler) entrenamientosPage(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
-		http.NotFound(w, r)
-		return
-	}
-	if r.Method != http.MethodGet {
-		methodNotAllowed(w, "GET")
-		return
-	}
 	h.renderEntrenamientos(w, r, false)
 }
 
@@ -60,10 +52,6 @@ func readEntrenamiento(r *http.Request) (application.NuevoEntrenamiento, error) 
 }
 
 func (h *webHandler) createEntrenamiento(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		methodNotAllowed(w, "POST")
-		return
-	}
 	input, err := readEntrenamiento(r)
 	if err != nil {
 		writeError(w, err, "Error leyendo entrenamiento")

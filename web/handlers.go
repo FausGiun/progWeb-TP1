@@ -41,11 +41,6 @@ func writeError(w http.ResponseWriter, err error, message string) {
 	http.Error(w, message, http.StatusInternalServerError)
 }
 
-func methodNotAllowed(w http.ResponseWriter, methods string) {
-	w.Header().Set("Allow", methods)
-	http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
-}
-
 func renderHTML(w http.ResponseWriter, r *http.Request, component templ.Component) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := component.Render(r.Context(), w); err != nil {

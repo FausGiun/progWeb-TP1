@@ -8,10 +8,6 @@ import (
 )
 
 func (h *webHandler) zapatillasPage(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		methodNotAllowed(w, "GET")
-		return
-	}
 	h.renderZapatillas(w, r, false)
 }
 
@@ -29,10 +25,6 @@ func (h *webHandler) renderZapatillas(w http.ResponseWriter, r *http.Request, so
 }
 
 func (h *webHandler) createZapatilla(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		methodNotAllowed(w, "POST")
-		return
-	}
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Formulario inválido", http.StatusBadRequest)
 		return
